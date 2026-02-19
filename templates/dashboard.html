@@ -1,0 +1,1198 @@
+{% extends "base.html" %}
+
+
+{% block page_title %}
+Normative Funding Breakdown
+{% endblock %}
+
+
+{% block content %}
+
+<div class="w-full">
+
+    <!-- TOP BAR (responsive) -->
+    <div class="sticky top-0 z-30 bg-[#BDBDBD] px-4 lg:px-6 py-3 lg:h-12">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+
+            <!-- Title -->
+            <h2 class="text-lg lg:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black leading-tight">
+                Statement of Account of {{ year }}
+            </h2>
+
+            <!-- Filters -->
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-6">
+
+                <div class="font-['Bricolage_Grotesque'] font-extrabold text-sm lg:text-base lg:mr-5">
+                    Filters:
+                </div>
+
+                <!-- Year Filter -->
+                <div class="flex items-center gap-3 w-full lg:w-auto">
+                    <label for="year_filter"
+                        class="font-['Bricolage_Grotesque'] font-extrabold text-sm whitespace-nowrap">
+                        Year:
+                    </label>
+
+                    <div class="relative w-full lg:w-32">
+                        <select name="year_filter" id="year_filter" onchange="updateFilters()"
+                            class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer py-1 px-4">
+                            {% for y in suc_years %}
+                            <option value="{{ y }}" {% if y==year %}selected{% endif %}>
+                                {{ y }}
+                            </option>
+                            {% endfor %}
+
+                            {% if not suc_years %}
+                            <option>No Sheets Found</option>
+                            {% endif %}
+                        </select>
+
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="flex items-center gap-3 w-full lg:w-auto">
+                    <label for="type_filter"
+                        class="font-['Bricolage_Grotesque'] font-extrabold text-sm whitespace-nowrap">
+                        Type:
+                    </label>
+
+                    <div class="relative w-full lg:w-32">
+                        <select name="type_filter" id="type_filter" onchange="updateFilters()"
+                            class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer py-1 px-4">
+                            <option value="all" {% if filter_type=='all' %}selected{% endif %}>All</option>
+                            <option value="gaa" {% if filter_type=='gaa' %}selected{% endif %}>GAA</option>
+                            <option value="suc_income" {% if filter_type=='suc_income' %}selected{% endif %}>SUC Income
+                            </option>
+                        </select>
+
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- PAGE CONTENT PADDING (responsive) -->
+    <div class="px-4 sm:px-6 lg:px-8">
+
+        <!-- SUC INCOME SECTION -->
+        <div id="suc_income_section" class="{% if filter_type == 'gaa' %}hidden{% endif %}">
+            <div class="py-6 sm:py-8">
+                <h2 class="text-xl sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-gray-800 mb-6">
+                    SUC Income Statement
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
+                    <div
+                        class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-money-check text-green-600 text-2xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-2xl md:text-xl font-extrabold leading-tight">{{ income.grand_total_income }}</p>
+                            <p class="font-semibold tracking-wide text-white/90">Grand Total Income</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-money-check text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ income.tuition_misc_fee }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Tuition & Misc. Fee</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-wallet text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ income.miscellaneous }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Miscellaneous</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-coins text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ income.other_income }}</p>
+                            <p class="text-sm text-gray-500 mt-1">Other Income</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- INCOME CHART SECTION -->
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
+                <h2
+                    class="text-lg sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black mb-6 sm:mb-10 text-center uppercase">
+                    Statement of Income of {{ year }} Breakdown
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Overall Distribution</h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="mainPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Tuition Fee & Misc. Fee
+                        </h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="tuitionPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 flex justify-center">
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col w-full lg:max-w-2xl">
+                            <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Other Income</h3>
+                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                                <canvas id="otherIncomePieChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# OPTIONAL: If you really have this canvas somewhere, keep it. Otherwise remove JS for it. #}
+                    {# <div class="lg:col-span-2 bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">SUC Income Trend</h3>
+                        <div class="relative w-full h-72 sm:h-96 lg:h-[450px]">
+                            <canvas id="sucIncomeLineChart"></canvas>
+                        </div>
+                    </div> #}
+                </div>
+            </div>
+        </div>
+
+        <!-- ALLOTMENT SECTION -->
+        <div id="allotment_section" class="{% if filter_type == 'suc_income' %}hidden{% endif %}">
+            <div class="py-6 sm:py-8">
+                <h2 class="text-xl sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-gray-800 mb-6">
+                    Allotment Statement
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                    <div
+                        class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-hand-holding-dollar text-green-600 text-2xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-2xl md:text-xl font-extrabold leading-tight">{{ allotment.combined_total }}</p>
+                            <p class="font-semibold tracking-wide text-white/90">Total Allotment</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-money-bill-trend-up text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ allotment.gaa_total }}</p>
+                            <p class="text-sm text-gray-500 mt-1">GAA Allotment</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-sack-dollar text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ allotment.suc_total }}</p>
+                            <p class="text-sm text-gray-500 mt-1">SUC Income Allotment</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ALLOTMENT CHARTS -->
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
+                <h2
+                    class="text-lg sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black mb-6 sm:mb-10 text-center uppercase">
+                    Allotment Breakdown ({{ year }})
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">GAA vs SUC Income
+                            Allotment</h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="allotmentPieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Allotment by Category
+                            (PS, MOOE, CO)</h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="allotmentCategoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">GAA Allotment
+                            Distribution</h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="allotmentGAAChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">SUC Income Allotment
+                            Distribution</h3>
+                        <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
+                            <canvas id="allotmentSUCChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Allotment by Function
+                            (Stacked: GAA + SUC Income)</h3>
+                        <div class="relative w-full h-72 sm:h-96 lg:h-[450px]">
+                            <canvas id="allotmentFunctionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Allotment Comparison: GAA
+                            vs SUC Income by Function</h3>
+                        <div class="relative w-full h-72 sm:h-96 lg:h-[450px]">
+                            <canvas id="allotmentComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXPENDITURE SECTION -->
+        <div id="expenditure_section" class="{% if filter_type == 'suc_income' %}hidden{% endif %}">
+            <div class="py-6 sm:py-8">
+                <h2 class="text-xl sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-gray-800 mb-6">
+                    Expenditure Statement
+                </h2>
+
+                <!-- FIXED: proper 3-card layout -->
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                    <div class="relative bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-6 text-white shadow-lg">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-money-bill-transfer text-red-600 text-2xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-2xl md:text-xl font-extrabold leading-tight">{{ expenditure.combined_total }}</p>
+                            <p class="font-semibold tracking-wide text-white/90">Total Expenditure</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-receipt text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ expenditure.gaa_total }}</p>
+                            <p class="text-sm text-gray-500 mt-1">GAA Expenditure</p>
+                        </div>
+                    </div>
+
+                    <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                        <div
+                            class="absolute top-4 left-4 w-12 h-12 bg-red-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-file-invoice-dollar text-white text-xl"></i>
+                        </div>
+                        <div class="mt-12 text-right">
+                            <p class="text-xl font-bold text-gray-900">{{ expenditure.suc_total }}</p>
+                            <p class="text-sm text-gray-500 mt-1">SUC Income Expenditure</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FIXED: keep this INSIDE expenditure_section -->
+            <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
+                <h2
+                    class="text-lg sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black mb-6 sm:mb-10 text-center uppercase">
+                    Expenditure Breakdown ({{ year }})
+                </h2>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">GAA vs SUC Income
+                            Expenditure</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditurePieChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Expenditure by Category
+                            (PS, MOOE, CO)</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditureCategoryChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">GAA Expenditure
+                            Distribution</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditureGAAChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">SUC Income Expenditure
+                            Distribution</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditureSUCChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Expenditure by Function
+                            (Stacked: GAA + SUC Income)</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditureFunctionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Expenditure Comparison:
+                            GAA vs SUC Income by Function</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="expenditureComparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    {# If you want this, UNCOMMENT the HTML canvas AND keep the JS guard #}
+                    {# <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col lg:col-span-2">
+                        <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">Budget Utilization Rate
+                            (Expenditure vs Allotment)</h3>
+                        <div class="relative h-[450px] w-full">
+                            <canvas id="utilizationChart"></canvas>
+                        </div>
+                    </div> #}
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- end page padding -->
+</div> <!- </div>
+    </div>
+
+    <!-- CHART JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        Chart.defaults.responsive = true;
+        Chart.defaults.maintainAspectRatio = false;
+
+        function updateFilters() {
+            const year = document.getElementById('year_filter')?.value;
+
+            const typeEl = document.getElementById('type_filter');
+            const type = typeEl ? typeEl.value : "all";
+
+            window.location.href = `/?year=${encodeURIComponent(year)}&type=${encodeURIComponent(type)}`;
+        }
+
+        function formatCurrency(value) {
+            return '₱' + value.toLocaleString('en-PH');
+        }
+
+        function calculatePercentage(value, total) {
+            return total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+        }
+
+        const selectedYear = "{{ year }}";
+        const filterType = "{{ filter_type }}";
+
+        // Load Income Charts (if SUC Income section is visible)
+        if (filterType === 'all' || filterType === 'suc_income') {
+            fetch(`/api/income-data?year=${selectedYear}`)
+                .then(res => res.json())
+                .then(data => {
+
+                    const mainColors = [
+                        '#1e40af', '#60a5fa', '#f97316', '#22c55e', '#ec4899',
+                        '#a855f7', '#ef4444', '#eab308', '#14b8a6', '#8b5cf6'
+                    ];
+
+                    const tuitionColors = ['#1e3a8a', '#1e40af', '#3b82f6', '#60a5fa', '#93c5fd'];
+                    const otherIncomeColors = ['#065f46', '#047857', '#059669', '#10b981', '#34d399'];
+
+                    let allItems = [];
+                    data.breakdown?.tuition_details?.forEach(i => allItems.push({ name: i.name, value: i.value }));
+                    data.breakdown?.other_income_details?.forEach(i => allItems.push({ name: i.name, value: i.value }));
+                    allItems.sort((a, b) => b.value - a.value);
+
+                    const grandTotal = data.grand_total_income;
+
+                    /* MAIN PIE */
+                    new Chart(document.getElementById('mainPieChart'), {
+                        type: 'pie',
+                        data: {
+                            labels: allItems.map(i => i.name),
+                            datasets: [{
+                                data: allItems.map(i => i.value),
+                                backgroundColor: mainColors,
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 12,
+                                        font: { size: 11 },
+                                        generateLabels(chart) {
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], grandTotal)})`,
+                                                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                index: i
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    /* TUITION PIE */
+                    if (data.breakdown?.tuition_details?.length) {
+                        const tuitionTotal = data.breakdown.tuition_details.reduce((sum, i) => sum + i.value, 0);
+                        new Chart(document.getElementById('tuitionPieChart'), {
+                            type: 'pie',
+                            data: {
+                                labels: data.breakdown.tuition_details.map(i => i.name),
+                                datasets: [{
+                                    data: data.breakdown.tuition_details.map(i => i.value),
+                                    backgroundColor: tuitionColors,
+                                    borderColor: '#fff',
+                                    borderWidth: 2,
+                                    hoverOffset: 8
+                                }]
+                            },
+                            options: {
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: {
+                                            boxWidth: 12,
+                                            padding: 12,
+                                            font: { size: 11 },
+                                            generateLabels(chart) {
+                                                return chart.data.labels.map((label, i) => ({
+                                                    text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], tuitionTotal)})`,
+                                                    fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                    index: i
+                                                }));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    /* OTHER INCOME PIE */
+                    if (data.breakdown?.other_income_details?.length) {
+                        const otherTotal = data.breakdown.other_income_details.reduce((sum, i) => sum + i.value, 0);
+                        new Chart(document.getElementById('otherIncomePieChart'), {
+                            type: 'pie',
+                            data: {
+                                labels: data.breakdown.other_income_details.map(i => i.name),
+                                datasets: [{
+                                    data: data.breakdown.other_income_details.map(i => i.value),
+                                    backgroundColor: otherIncomeColors,
+                                    borderColor: '#fff',
+                                    borderWidth: 2,
+                                    hoverOffset: 8
+                                }]
+                            },
+                            options: {
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: {
+                                            boxWidth: 12,
+                                            padding: 12,
+                                            font: { size: 11 },
+                                            generateLabels(chart) {
+                                                return chart.data.labels.map((label, i) => ({
+                                                    text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], otherTotal)})`,
+                                                    fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                    index: i
+                                                }));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                });
+
+            // SUC Income trend chart
+            const sucYears = {{ suc_years_chart | tojson
+        }};
+        const sucTotals = {{ suc_totals | tojson }};
+
+        if (document.getElementById("sucIncomeLineChart")) {
+            new Chart(document.getElementById("sucIncomeLineChart"), {
+                type: "line",
+                data: {
+                    labels: sucYears,
+                    datasets: [{
+                        label: "Total SUC Income",
+                        data: sucTotals,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        borderColor: "#16a34a",
+                        backgroundColor: "rgba(22,163,74,0.2)",
+                        fill: true,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => " ₱" + ctx.raw.toLocaleString()
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: v => "₱" + v.toLocaleString()
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+        // Load Allotment Charts (if GAA or All)
+        if (filterType === 'all' || filterType === 'gaa') {
+            fetch(`/api/allotment-data?year=${selectedYear}`)
+                .then(res => res.json())
+                .then(data => {
+
+                    // 1. Allotment Pie Chart (GAA vs SUC Income)
+                    new Chart(document.getElementById('allotmentPieChart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['GAA Allotment', 'SUC Income Allotment'],
+                            datasets: [{
+                                data: [data.gaa.total, data.suc_income.total],
+                                backgroundColor: ['#3b82f6', '#10b981'],
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 12,
+                                        font: { size: 11 },
+                                        generateLabels(chart) {
+                                            const total = data.gaa.total + data.suc_income.total;
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], total)})`,
+                                                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                index: i
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 2. Allotment by Category (PS, MOOE, CO)
+                    const totalPS = data.gaa.ps + data.suc_income.ps;
+                    const totalMOOE = data.gaa.mooe + data.suc_income.mooe;
+                    const totalCO = data.gaa.co + data.suc_income.co;
+
+                    new Chart(document.getElementById('allotmentCategoryChart'), {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Personal Services (PS)', 'MOOE', 'Capital Outlay (CO)'],
+                            datasets: [{
+                                data: [totalPS, totalMOOE, totalCO],
+                                backgroundColor: ['#6366f1', '#ec4899', '#f59e0b'],
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 12,
+                                        font: { size: 11 },
+                                        generateLabels(chart) {
+                                            const total = totalPS + totalMOOE + totalCO;
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], total)})`,
+                                                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                index: i
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 3. GAA Allotment Distribution (PS, MOOE, CO)
+                    new Chart(document.getElementById('allotmentGAAChart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['PS', 'MOOE', 'CO'],
+                            datasets: [{
+                                data: [data.gaa.ps, data.gaa.mooe, data.gaa.co],
+                                backgroundColor: ['#1e40af', '#3b82f6', '#93c5fd'],
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 12,
+                                        font: { size: 11 },
+                                        generateLabels(chart) {
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], data.gaa.total)})`,
+                                                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                index: i
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 4. SUC Income Allotment Distribution (PS, MOOE, CO)
+                    new Chart(document.getElementById('allotmentSUCChart'), {
+                        type: 'pie',
+                        data: {
+                            labels: ['PS', 'MOOE', 'CO'],
+                            datasets: [{
+                                data: [data.suc_income.ps, data.suc_income.mooe, data.suc_income.co],
+                                backgroundColor: ['#065f46', '#10b981', '#6ee7b7'],
+                                borderColor: '#fff',
+                                borderWidth: 2,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        padding: 12,
+                                        font: { size: 11 },
+                                        generateLabels(chart) {
+                                            return chart.data.labels.map((label, i) => ({
+                                                text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], data.suc_income.total)})`,
+                                                fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                                index: i
+                                            }));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 5. Allotment by Function (Stacked Bar)
+                    const functionLabels = data.breakdown.map(item => item.function);
+                    const gaaData = data.breakdown.map(item => item.gaa_total);
+                    const sucData = data.breakdown.map(item => item.suc_total);
+
+                    new Chart(document.getElementById('allotmentFunctionChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: functionLabels,
+                            datasets: [
+                                {
+                                    label: 'GAA Allotment',
+                                    data: gaaData,
+                                    backgroundColor: '#3b82f6',
+                                    borderColor: '#1e40af',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'SUC Income Allotment',
+                                    data: sucData,
+                                    backgroundColor: '#10b981',
+                                    borderColor: '#047857',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ` ${ctx.dataset.label}: ₱${ctx.raw.toLocaleString()}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true
+                                },
+                                y: {
+                                    stacked: true,
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: v => "₱" + v.toLocaleString()
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // 6. Allotment Comparison Chart (Grouped Bar)
+                    new Chart(document.getElementById('allotmentComparisonChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: functionLabels,
+                            datasets: [
+                                {
+                                    label: 'GAA Allotment',
+                                    data: gaaData,
+                                    backgroundColor: '#3b82f6',
+                                    borderColor: '#1e40af',
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'SUC Income Allotment',
+                                    data: sucData,
+                                    backgroundColor: '#10b981',
+                                    borderColor: '#047857',
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: ctx => ` ${ctx.dataset.label}: ₱${ctx.raw.toLocaleString()}`
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: v => "₱" + v.toLocaleString()
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        // Load Expenditure Charts (if GAA or All)
+        if (filterType === 'all' || filterType === 'gaa') {
+            // Fetch both expenditure and allotment data for utilization chart
+            Promise.all([
+                fetch(`/api/expenditure-data?year=${selectedYear}`).then(res => res.json()),
+                fetch(`/api/allotment-data?year=${selectedYear}`).then(res => res.json())
+            ]).then(([expData, allotData]) => {
+
+                // 1. Expenditure Pie Chart (GAA vs SUC Income)
+                new Chart(document.getElementById('expenditurePieChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['GAA Expenditure', 'SUC Income Expenditure'],
+                        datasets: [{
+                            data: [expData.gaa.total, expData.suc_income.total],
+                            backgroundColor: ['#ef4444', '#f97316'],
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        const total = expData.gaa.total + expData.suc_income.total;
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], total)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 2. Expenditure by Category (PS, MOOE, CO)
+                const totalPS = expData.gaa.ps + expData.suc_income.ps;
+                const totalMOOE = expData.gaa.mooe + expData.suc_income.mooe;
+                const totalCO = expData.gaa.co + expData.suc_income.co;
+
+                new Chart(document.getElementById('expenditureCategoryChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Personal Services (PS)', 'MOOE', 'Capital Outlay (CO)'],
+                        datasets: [{
+                            data: [totalPS, totalMOOE, totalCO],
+                            backgroundColor: ['#dc2626', '#f59e0b', '#8b5cf6'],
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        const total = totalPS + totalMOOE + totalCO;
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], total)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 3. GAA Expenditure Distribution (PS, MOOE, CO)
+                new Chart(document.getElementById('expenditureGAAChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['PS', 'MOOE', 'CO'],
+                        datasets: [{
+                            data: [expData.gaa.ps, expData.gaa.mooe, expData.gaa.co],
+                            backgroundColor: ['#7f1d1d', '#dc2626', '#fca5a5'],
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], expData.gaa.total)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 4. SUC Income Expenditure Distribution (PS, MOOE, CO)
+                new Chart(document.getElementById('expenditureSUCChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: ['PS', 'MOOE', 'CO'],
+                        datasets: [{
+                            data: [expData.suc_income.ps, expData.suc_income.mooe, expData.suc_income.co],
+                            backgroundColor: ['#7c2d12', '#f97316', '#fed7aa'],
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], expData.suc_income.total)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 5. Expenditure by Function (Stacked Bar)
+                const functionLabels = expData.breakdown.map(item => item.function);
+                const gaaExpData = expData.breakdown.map(item => item.gaa_total);
+                const sucExpData = expData.breakdown.map(item => item.suc_total);
+
+                new Chart(document.getElementById('expenditureFunctionChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: functionLabels,
+                        datasets: [
+                            {
+                                label: 'GAA Expenditure',
+                                data: gaaExpData,
+                                backgroundColor: '#ef4444',
+                                borderColor: '#b91c1c',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'SUC Income Expenditure',
+                                data: sucExpData,
+                                backgroundColor: '#f97316',
+                                borderColor: '#c2410c',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.dataset.label}: ₱${ctx.raw.toLocaleString()}`
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                stacked: true
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => "₱" + v.toLocaleString()
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 6. Expenditure Comparison Chart (Grouped Bar)
+                new Chart(document.getElementById('expenditureComparisonChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: functionLabels,
+                        datasets: [
+                            {
+                                label: 'GAA Expenditure',
+                                data: gaaExpData,
+                                backgroundColor: '#ef4444',
+                                borderColor: '#b91c1c',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'SUC Income Expenditure',
+                                data: sucExpData,
+                                backgroundColor: '#f97316',
+                                borderColor: '#c2410c',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.dataset.label}: ₱${ctx.raw.toLocaleString()}`
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => "₱" + v.toLocaleString()
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 7. Budget Utilization Chart (Expenditure vs Allotment)
+                const utilizationLabels = expData.breakdown.map(item => item.function);
+                const allotmentTotals = allotData.breakdown.map(item => item.gaa_total + item.suc_total);
+                const expenditureTotals = expData.breakdown.map(item => item.gaa_total + item.suc_total);
+                const utilizationRates = expenditureTotals.map((exp, i) =>
+                    allotmentTotals[i] > 0 ? (exp / allotmentTotals[i] * 100) : 0
+                );
+
+                new Chart(document.getElementById('utilizationChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: utilizationLabels,
+                        datasets: [
+                            {
+                                label: 'Allotment',
+                                data: allotmentTotals,
+                                backgroundColor: '#3b82f6',
+                                borderColor: '#1e40af',
+                                borderWidth: 1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Expenditure',
+                                data: expenditureTotals,
+                                backgroundColor: '#ef4444',
+                                borderColor: '#b91c1c',
+                                borderWidth: 1,
+                                yAxisID: 'y'
+                            },
+                            {
+                                label: 'Utilization Rate (%)',
+                                data: utilizationRates,
+                                type: 'line',
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 3,
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                yAxisID: 'y1',
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        if (ctx.dataset.label === 'Utilization Rate (%)') {
+                                            return ` ${ctx.dataset.label}: ${ctx.raw.toFixed(2)}%`;
+                                        }
+                                        return ` ${ctx.dataset.label}: ₱${ctx.raw.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: v => "₱" + v.toLocaleString()
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Amount (₱)'
+                                }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                ticks: {
+                                    callback: v => v + "%"
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Utilization Rate (%)'
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+    </script>
+
+{% endblock %}

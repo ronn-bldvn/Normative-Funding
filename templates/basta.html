@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="">
+
+    <div class="sticky top-0 z-50 sticky flex justify-between items-center h-12 bg-[#BDBDBD] flex items-center px-6">
+        <h2 class="text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black">
+                Statement of Income as of {{ year }}
+        </h2>
+
+        {# filters #}
+        <div class="flex flex-row gap-6 items-center">
+            <div class="font-['Bricolage_Grotesque'] font-extrabold mr-5">
+                Filters:
+            </div>
+            <div class="flex items-center gap-3">
+                <label for="year" class="font-['Bricolage_Grotesque'] font-extrabold text-sm">Year:</label>
+                    <div class="relative w-32">
+                        <select name="year" id="year" class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
+                            <option class="text-xs" value="all">All</option>
+                            <option class="text-xs" value="2024">2024</option>
+                            <option class="text-xs" value="2023">2023</option>
+                        </select>
+                        <!-- Custom dropdown arrow -->
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg
+                                class="h-4 w-4 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <label for="year" class="font-['Bricolage_Grotesque'] font-extrabold text-sm">Type:</label>
+                    <div class="relative w-32">
+                        <select name="year" id="year" class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
+                            <option class="text-xs" value="all">All</option>
+                            <option class="text-xs" value="2024">GAA</option>
+                            <option class="text-xs" value="2023">Suc Income</option>
+                        </select>
+                        <!-- Custom dropdown arrow -->
+                        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                            <svg
+                                class="h-4 w-4 text-gray-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-8">
+        <!-- SUMMARY CARDS -->
+        {# <div class="p-8 mt-5">
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {% set cards = [
+                ("Grand Total Income", income.grand_total_income),
+                ("Tuition Fee and Misc. Fee", income.tuition_misc_fee),
+                ("Miscellaneous", income.miscellaneous),
+                ("Other Income", income.other_income)
+                ] %}
+
+                {% for title, value in cards %}
+                <div class="bg-white p-6 rounded-xl shadow-md text-center transform hover:scale-105 transition">
+                    <p class="text-2xl font-bold text-gray-900">{{ value }}</p>
+                    <p class="text-sm font-semibold text-gray-600 mb-2">{{ title }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div> #}
+
+        <div class="p-8 mt-5">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+                <!-- Card 1: Highlight / Total -->
+                <div class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
+                    <!-- Accent square -->
+                    <div class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-money-check text-green-600 text-2xl"></i>
+                    </div>
+
+                    <div class="mt-12 text-right">
+                        <p class="text-2xl font-extrabold leading-tight">
+                            {{ income.grand_total_income }}
+                        </p>
+                        <p class="font-semibold tracking-wide text-white/90">
+                            Grand Total Income
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                    <div class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-money-check text-white text-xl"></i>
+                    </div>
+
+                    <div class="mt-12 text-right">
+                        <p class="text-xl font-bold text-gray-900">
+                            {{ income.tuition_misc_fee }}
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Tuition & Misc. Fee
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                    <div class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-wallet text-white text-xl"></i>
+                    </div>
+
+                    <div class="mt-12 text-right">
+                        <p class="text-xl font-bold text-gray-900">
+                            {{ income.miscellaneous }}
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Miscellaneous
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="relative bg-white rounded-2xl p-6 shadow-md">
+                    <div class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-coins text-white text-xl"></i>
+                    </div>
+
+                    <div class="mt-12 text-right">
+                        <p class="text-xl font-bold text-gray-900">
+                            {{ income.other_income }}
+                        </p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Other Income
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- CHART SECTION -->
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-10 text-center uppercase">
+                Income Breakdown ({{ year }})
+            </h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">
+                    Overall Distribution
+                </h3>
+                <div class="relative h-[450px] w-full">
+                    <canvas id="mainPieChart"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">
+                    Tuition Fee & Misc. Fee
+                </h3>
+                <div class="relative h-[450px] w-full">
+                    <canvas id="tuitionPieChart"></canvas>
+                </div>
+            </div>
+
+            <div class="col-span-1 lg:col-span-2 flex justify-center">
+                <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col w-1/2">
+                    <h3 class="text-sm font-bold text-gray-700 mb-4 text-center uppercase">
+                        Other Income
+                    </h3>
+                    <div class="relative h-[450px] w-full">
+                        <canvas id="otherIncomePieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- CHART JS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+
+    function formatCurrency(value) {
+        return '₱' + value.toLocaleString('en-PH');
+    }
+
+    function calculatePercentage(value, total) {
+        return total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
+    }
+
+    fetch('/api/income-data')
+        .then(res => res.json())
+        .then(data => {
+
+            const mainColors = [
+                '#1e40af', '#60a5fa', '#f97316', '#22c55e', '#ec4899',
+                '#a855f7', '#ef4444', '#eab308', '#14b8a6', '#8b5cf6'
+            ];
+
+            const tuitionColors = ['#1e3a8a', '#1e40af', '#3b82f6', '#60a5fa', '#93c5fd'];
+            const otherIncomeColors = ['#065f46', '#047857', '#059669', '#10b981', '#34d399'];
+
+            // Combine all for main chart
+            let allItems = [];
+            data.breakdown?.tuition_details?.forEach(i => allItems.push({ name: i.name, value: i.value }));
+            data.breakdown?.other_income_details?.forEach(i => allItems.push({ name: i.name, value: i.value }));
+            allItems.sort((a, b) => b.value - a.value);
+
+            const grandTotal = data.grand_total_income;
+
+            /* MAIN PIE */
+            new Chart(document.getElementById('mainPieChart'), {
+                type: 'pie',
+                data: {
+                    labels: allItems.map(i => i.name),
+                    datasets: [{
+                        data: allItems.map(i => i.value),
+                        backgroundColor: mainColors,
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 12,
+                                font: { size: 11 },
+                                generateLabels(chart) {
+                                    return chart.data.labels.map((label, i) => ({
+                                        text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], grandTotal)})`,
+                                        fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                        index: i
+                                    }));
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            /* TUITION PIE - SAME STYLE AS MAIN */
+            if (data.breakdown?.tuition_details?.length) {
+                const tuitionTotal = data.breakdown.tuition_details.reduce((sum, i) => sum + i.value, 0);
+                new Chart(document.getElementById('tuitionPieChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: data.breakdown.tuition_details.map(i => i.name),
+                        datasets: [{
+                            data: data.breakdown.tuition_details.map(i => i.value),
+                            backgroundColor: tuitionColors,
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], tuitionTotal)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            /* OTHER INCOME PIE - SAME STYLE AS MAIN */
+            if (data.breakdown?.other_income_details?.length) {
+                const otherTotal = data.breakdown.other_income_details.reduce((sum, i) => sum + i.value, 0);
+                new Chart(document.getElementById('otherIncomePieChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: data.breakdown.other_income_details.map(i => i.name),
+                        datasets: [{
+                            data: data.breakdown.other_income_details.map(i => i.value),
+                            backgroundColor: otherIncomeColors,
+                            borderColor: '#fff',
+                            borderWidth: 2,
+                            hoverOffset: 8
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    padding: 12,
+                                    font: { size: 11 },
+                                    generateLabels(chart) {
+                                        return chart.data.labels.map((label, i) => ({
+                                            text: `${label}: ${formatCurrency(chart.data.datasets[0].data[i])} (${calculatePercentage(chart.data.datasets[0].data[i], otherTotal)})`,
+                                            fillStyle: chart.data.datasets[0].backgroundColor[i],
+                                            index: i
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+        });
+</script>
+
+{% endblock %}
