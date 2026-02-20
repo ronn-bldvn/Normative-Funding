@@ -14,49 +14,105 @@ SUC Faculty
         </h2>
 
         {# filters #}
-        <div class="flex flex-row gap-6 items-center">
-            <div class="font-['Bricolage_Grotesque'] font-extrabold mr-5">
-                Filters:
-            </div>
-            <div class="flex items-center gap-3">
-                <label for="year_filter" class="font-['Bricolage_Grotesque'] font-extrabold text-sm">Year:</label>
-                <div class="relative w-32">
-                    
-                    <select name="year" id="year"
-                        class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
-                        <option class="text-xs" value="all">All</option>
-                        <option class="text-xs" value="2024">GAA</option>
-                        <option class="text-xs" value="2023">Suc Income</option>
-                    </select>
-                    
-                    <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
+        <form method="GET" class="flex flex-row gap-6 items-center">
 
-            <div class="flex items-center gap-3">
-                <label for="year" class="font-['Bricolage_Grotesque'] font-extrabold text-sm">Type:</label>
-                <div class="relative w-32">
-                    <select name="year" id="year"
-                        class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
-                        <option class="text-xs" value="all">All</option>
-                        <option class="text-xs" value="2024">GAA</option>
-                        <option class="text-xs" value="2023">Suc Income</option>
-                    </select>
-                    <!-- Custom dropdown arrow -->
-                    <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
-                        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
+    {% for col in filter_columns %}
+    <div class="flex items-center gap-3">
+        <label class="font-['Bricolage_Grotesque'] font-extrabold text-sm">
+            {{ col }}
+        </label>
+
+        <div class="relative w-40">
+            <select name="{{ col }}"
+                class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
+
+                <option value="All">All</option>
+
+                {% for val in filter_options[col] %}
+                <option value="{{ val }}"
+                    {% if request.args.get(col) == val %} selected {% endif %}>
+                    {{ val }}
+                </option>
+                {% endfor %}
+
+            </select>
         </div>
     </div>
+    {% endfor %}
 
+    <button type="submit"
+        class="px-4 py-1 bg-black text-white rounded-full text-sm">
+        Apply
+    </button>
+
+</form>
+
+{% for col in filter_columns %}
+<div class="flex items-center gap-3">
+    <label class="font-['Bricolage_Grotesque'] font-extrabold text-sm">
+        {{ col }}
+    </label>
+
+    <div class="relative w-40">
+        <select name="{{ col }}"
+            class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer">
+
+            <option value="All">All</option>
+
+            {% for val in filter_options[col] %}
+            <option value="{{ val }}"
+                {% if request.args.get(col) == val %} selected {% endif %}>
+                {{ val }}
+            </option>
+            {% endfor %}
+
+        </select>
+
+        <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+            <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+    </div>
+    {# teaching cat
+    generic fac rank
+    tenured
+    college
+    dept #}
+
+    <div class="mt-6 overflow-x-auto px-6">
+    <table class="min-w-full bg-white border border-gray-200">
+        <thead class="bg-gray-200">
+            <tr>
+                {% if faculty_data %}
+                    {% for key in faculty_data[0].keys() %}
+                        <th class="px-4 py-2 text-left text-sm font-bold">
+                            {{ key }}
+                        </th>
+                    {% endfor %}
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in faculty_data %}
+            <tr class="border-t">
+                {% for value in row.values() %}
+                <td class="px-4 py-2 text-sm">
+                    {{ value }}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+    
 </div>
 
 {% endblock %}
