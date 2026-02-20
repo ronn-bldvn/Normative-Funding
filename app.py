@@ -385,7 +385,16 @@ def get_total_income_trend(excel_path):
 
 # FOR SUC FACULTY
 
-# def read_suc_faculty(file_path):
+def read_suc_faculty(file_path):
+    try:
+        df = pd.read_excel(file_path)
+
+        # Remove Name and Gender from filtering logic later
+        return df
+
+    except Exception as e:
+        print("Error reading SUC Faculty file:", e)
+        return pd.DataFrame()
 
 #################################################
 
@@ -531,8 +540,44 @@ def get_expenditure_data():
 
 @app.route('/suc-faculty')
 def suc_faculty():
+    faculty_file = os.path.join(app.config['UPLOAD_FOLDER'], 'SUCS-FACULTY_CLEANED.xlsx')
+
+    df = read_suc_faculty(faculty_file)
+
+    if df.empty:
         return render_template(
+            'suc-faculty.html',
+            faculty_data=[],
+            filter_columns=[],
+            active_page='suc-faculty'
+        )
+
+    # Columns to EXCLUDE
+    excluded_columns = ["Name of Faculty", "Gender"]
+
+    # Only allow filtering on these columns
+    filter_columns = [col for col in df.columns if col not in excluded_columns]
+
+    # Apply filters from URL parameters
+    filtered_df = df.copy()
+
+    for column in filter_columns:
+        value = request.args.get(column)
+
+        if value and value != "All":
+            filtered_df = filtered_df[filtered_df[column].astype(str) == value]
+
+    filter_options = {
+        col: sorted(df[col].dropna().astype(str).unique())
+        for col in filter_columns
+    }
+
+    return render_template(
         'suc-faculty.html',
+        faculty_data=filtered_df.to_dict(orient='records'),
+        filter_columns=filter_columns,
+        df=df,
+        filter_options = filter_options,
         active_page='suc-faculty'
     )
 
