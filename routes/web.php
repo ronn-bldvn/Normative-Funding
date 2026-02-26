@@ -5,28 +5,6 @@ use App\Http\Controllers\FundingController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GraduatesController;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-| Mirrors the Flask route structure:
-|
-|   Flask                              →  Laravel
-|   ─────────────────────────────────────────────────────────────────────
-|   GET /                              →  FundingController@index
-|   GET /api/income-data               →  FundingController@getIncomeData
-|   GET /api/allotment-data            →  FundingController@getAllotmentData
-|   GET /api/expenditure-data          →  FundingController@getExpenditureData
-|
-|   GET /suc-faculty                   →  FacultyController@index
-|   GET /api/faculty-pie               →  FacultyController@facultyPie
-|
-|   GET /graduates                     →  GraduatesController@index
-|   GET /api/graduates-summary         →  GraduatesController@summary
-|   GET /api/graduates-by-college      →  GraduatesController@byCollege
-|   GET /api/graduates-gender-by-college → GraduatesController@genderByCollege
-|   GET /api/graduates-by-program      →  GraduatesController@byProgram
-*/
 
 // ──────────────────────────────────────────────────────────────────────────────
 // NORMATIVE FUNDING BREAKDOWN

@@ -14,8 +14,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  *   composer require phpoffice/phpspreadsheet
  *
  * Then run:
- *   php artisan funds:import /path/to/funds.xlsx
- *   php artisan funds:import /path/to/funds.xlsx --fresh   # truncates tables first
+ *   php artisan funds:import /path/to/.xlsx  #depends on the name of the file
+ *   php artisan funds:import /path/to/.xlsx --fresh   # truncates tables first
  */
 class ImportFundsXlsx extends Command
 {
