@@ -60,3 +60,17 @@ Route::prefix('api')->name('api.graduates.')->group(function () {
     Route::get('graduates-gender-by-college', [GraduatesController::class, 'genderByCollege'])->name('gender-by-college');
     Route::get('graduates-by-program',        [GraduatesController::class, 'byProgram'])      ->name('by-program');
 });
+
+
+use Illuminate\Support\Facades\DB;
+use App\Models\FundReport;
+
+Route::get('/debug-db', function () {
+    return [
+        'database' => DB::connection()->getDatabaseName(),
+        'host' => DB::connection()->getConfig('host'),
+        'port' => DB::connection()->getConfig('port'),
+        'count' => FundReport::count(),
+        'years' => FundReport::select('year')->distinct()->pluck('year'),
+    ];
+});
