@@ -691,7 +691,7 @@
                 }
             });
 
-            return data; 
+            return data;
         }
 
         // ---------- EXPENDITURE ----------
