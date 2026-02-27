@@ -173,18 +173,18 @@
                 <!-- Gender Distribution Chart -->
                 <div class="mt-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mt-8 items-center">
-                        <div class="bg-white rounded-xl p-4 shadow">
-                            <h3 class="font-bold">
-                                Gender Distribution
-                                @if($selected_college !== 'All') — {{ $selected_college }} @endif
-                            </h3>
-                            <div class="h-96"><canvas id="genderBar"></canvas></div>
-                        </div>
+                        <!-- Gender Distribution Chart + Distribution by College (ONLY show when All is selected) -->
+                        @if($selected_college === 'All')
+                            <div class="bg-white rounded-xl p-4 shadow">
+                                        <h3 class="font-bold">Gender Distribution</h3>
+                                        <div class="h-96"><canvas id="genderBar"></canvas></div>
+                                    </div>
 
-                        <div class="bg-white rounded-xl p-4 shadow">
-                            <h3 class="font-bold mb-2">Distribution of Graduates by College</h3>
-                            <div class="h-96"><canvas id="graduatesByCollege"></canvas></div>
-                        </div>
+                                    <div class="bg-white rounded-xl p-4 shadow">
+                                        <h3 class="font-bold mb-2">Distribution of Graduates by College</h3>
+                                        <div class="h-96"><canvas id="graduatesByCollege"></canvas></div>
+                                    </div>
+                        @endif
                     </div>
                 </div>
 
@@ -365,7 +365,7 @@
                             datalabels: { anchor: "end", align: "end", formatter: (value, ctx) => { const pct = data.percents?.[ctx.dataIndex] ?? 0; return `${value} (${pct}%)`; } }
                         }
                     },
-                    // plugins: [ChartDataLabels]
+
                 });
             }
 
