@@ -52,14 +52,16 @@
                     <!-- Type Filter -->
                     <div class="flex items-center gap-3 w-full lg:w-auto">
                         <label for="type_filter"
-                            class="font-['Bricolage_Grotesque'] font-extrabold text-sm whitespace-nowrap">Type:</label>
+                            class="font-['Bricolage_Grotesque'] font-extrabold text-sm whitespace-nowrap">Allotment Type:</label>
                         <div class="relative w-full lg:w-32">
                             <select name="type_filter" id="type_filter" onchange="updateFilters()" class="w-full appearance-none rounded-full bg-gray-100 text-center shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-300 cursor-pointer py-1 px-4">
 
-                                <option value="all" {{ $filter_type === 'all' ? 'selected' : '' }}>All</option>
-                                <option value="allotment" {{ $filter_type === 'allotment' ? 'selected' : '' }}>Allotment</option>
-                                <option value="expenditure" {{ $filter_type === 'expenditure' ? 'selected' : '' }}>Expenditure</option>
+                                {{-- <option value="all" {{ $filter_type === 'all' ? 'selected' : '' }}>All</option> --}}
+                                {{-- <option value="allotment" {{ $filter_type === 'allotment' ? 'selected' : '' }}>Allotment</option> --}}
+                                {{-- <option value="expenditure" {{ $filter_type === 'expenditure' ? 'selected' : '' }}>Expenditure</option> --}}
                                 <option value="suc_income" {{ $filter_type === 'suc_income' ? 'selected' : '' }}>SUC Income</option>
+                                <option value="expenditure" {{ $filter_type === 'expenditure' ? 'selected' : '' }}>Expenditure</option>
+                                <option value="allotment" {{ $filter_type === 'allotment' ? 'selected' : '' }}>Allotment</option>
 
                             </select>
                             <div class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
@@ -137,24 +139,24 @@
                 <!-- INCOME CHARTS -->
                 <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col" style="overflow: hidden;">
                             <h3 class="font-['inter'] text-sm font-bold text-gray-700 mb-4 text-center">Total University
                                 Income Breakdown</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
-                                <canvas id="mainPieChart"></canvas>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="mainPieChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
                             <h3 class="font-['inter'] text-sm font-bold text-gray-700 mb-4 text-center">Total Academic Fees
                                 Breakdown</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
-                                <canvas id="tuitionPieChart"></canvas>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="tuitionPieChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col w-full lg:max-w-2xl">
                             <h3 class="font-['inter'] text-sm font-bold text-gray-700 mb-4 text-center">Other Business Income Breakdown</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]">
-                                <canvas id="otherIncomePieChart"></canvas>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="otherIncomePieChart" class="w-full h-full"></div>
                             </div>
                         </div>
                     </div>
@@ -209,33 +211,38 @@
                 <!-- ALLOTMENT CHARTS -->
                 <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col" style="overflow: hidden;">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">Distribution by Funding Source</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]"><canvas id="allotmentPieChart"></canvas>
+                                <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                    <div id="allotmentPieChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">Total Allotment by Expense Class
                             </h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]"><canvas
-                                    id="allotmentCategoryChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="allotmentCategoryChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">GAA Allotment by Expense Class</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]"><canvas id="allotmentGAAChart"></canvas>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                    <div id="allotmentGAAChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">SUC Income Allotment by Expense
                                 Class</h3>
-                            <div class="relative w-full h-64 sm:h-80 lg:h-[450px]"><canvas id="allotmentSUCChart"></canvas>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="allotmentSUCChart" class="w-full h-full"></div>
                             </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col lg:col-span-2">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">Total Allotment by Institutional
                                 Function</h3>
-                            <div class="relative w-full h-72 sm:h-96 lg:h-[450px]"><canvas
-                                    id="allotmentFunctionChart"></canvas></div>
+                                    <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                        <div id="allotmentFunctionChart" class="w-full h-full"></div>
+                                    </div>
                         </div>
                     </div>
                 </div>
@@ -290,31 +297,41 @@
                 </div>
 
                 <!-- EXPENDITURE CHARTS -->
-                 <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
+                <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mb-8">
                     {{-- <h2
                         class="text-lg sm:text-2xl font-['Bricolage_Grotesque'] font-extrabold text-black mb-6 sm:mb-10 text-center uppercase">
                         Expenditure Breakdown ({{ $year }})
                     </h2> --}}
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                        <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
+                        <div class="bg-gray-50 rounded-xl p-4 sm:p-6 shadow-inner flex flex-col" style="overflow: hidden;">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center ">Distribution of Total Expenditures</h3>
-                            <div class="relative h-[450px] w-full"><canvas id="expenditurePieChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="expenditurePieChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center ">Total Expenditure by Expense Class</h3>
-                            <div class="relative h-[450px] w-full"><canvas id="expenditureCategoryChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="expenditureCategoryChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center ">GAA Expenditure by Expense Class</h3>
-                            <div class="relative h-[450px] w-full"><canvas id="expenditureGAAChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="expenditureGAAChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center ">SUC Income Expenditure by Expense Class</h3>
-                            <div class="relative h-[450px] w-full"><canvas id="expenditureSUCChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                <div id="expenditureSUCChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col lg:col-span-2">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center ">Total Expenditure by Institutional Function</h3>
-                            <div class="relative h-[450px] w-full"><canvas id="expenditureFunctionChart"></canvas></div>
+                            <div class="relative w-full min-h-[420px] sm:min-h-[460px]" style="overflow: hidden;">
+                                    <div id="expenditureFunctionChart" class="w-full h-full"></div>
+                            </div>
                         </div>
                         {{-- <div class="bg-gray-50 rounded-xl p-6 shadow-inner flex flex-col lg:col-span-2">
                             <h3 class="text-sm font-bold text-gray-700 mb-4 text-center">Expenditure Comparison:
@@ -328,49 +345,9 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
     <script>
-        Chart.defaults.responsive = true;
-        Chart.defaults.maintainAspectRatio = false;
-
-        Chart.register(ChartDataLabels);
-
-        Chart.defaults.font.family = 'Inter';
-
-        const centerTextPlugin = {
-            id: 'centerText',
-            beforeDraw(chart) {
-                if (chart.config.type !== 'doughnut') return;
-
-                const { ctx, chartArea } = chart;
-                const dataset = chart.data.datasets[0];
-                const total = dataset.data.reduce((a, b) => a + b, 0);
-
-                ctx.save();
-
-                const centerX = (chartArea.left + chartArea.right) / 2;
-                const centerY = (chartArea.top + chartArea.bottom) / 2;
-
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-
-                // Label
-                ctx.font = 'bold 12px Inter';
-                ctx.fillStyle = '#6b7280';
-                ctx.fillText('Total', centerX, centerY - 12);
-
-                // Amount
-                ctx.font = 'bold 16px Inter';
-                ctx.fillStyle = '#111827';
-                ctx.fillText('₱' + total.toLocaleString(), centerX, centerY + 12);
-
-                ctx.restore();
-            }
-        };
-
-        Chart.register(centerTextPlugin);
-
         const selectedYear = @json($year);
         const filterType = @json($filter_type);
 
@@ -379,10 +356,10 @@
 
         const chartColors = [
             '#007B3E', '#FFD700', '#39EDFF', '#FFE450', '#FFB495',
-            '#FFC177', '#FFA8F7', '#00FFFF', '#E5E5E5', '#E06B0D', '#567F13', '#1A5F30',
+            '#FFC177', '#FFA8F7', '#00FFFF', '#E5E5E5', '#E06B0D',
+            '#567F13', '#1A5F30'
         ];
 
-        // ---------- helpers ----------
         const $ = (id) => document.getElementById(id);
 
         function updateFilters() {
@@ -403,94 +380,313 @@
                 .filter(i => i.value > 0);
         }
 
-        function toggleChartCard(canvasId, show) {
-            const canvas = $(canvasId);
-            if (!canvas) return;
-            const card = canvas.closest('.bg-gray-50') || canvas.parentElement;
+        function toggleChartCard(chartId, show) {
+            const el = $(chartId);
+            if (!el) return;
+            const card = el.closest('.bg-gray-50') || el.parentElement;
             if (card) card.classList.toggle('hidden', !show);
         }
 
-        function pieOptions() {
+        function peso(v) {
+            return '₱' + Number(v || 0).toLocaleString('en-US');
+        }
+
+        function compactPeso(v) {
+            v = Number(v || 0);
+            if (v >= 1_000_000_000) return '₱' + (v / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+            if (v >= 1_000_000) return '₱' + (v / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (v >= 1_000) return '₱' + (v / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return '₱' + v.toLocaleString('en-US');
+        }
+
+        function safeResize(id) {
+            const el = $(id);
+            if (!el) return;
+
+            requestAnimationFrame(() => {
+                Plotly.Plots.resize(el);
+            });
+
+            setTimeout(() => {
+                Plotly.Plots.resize(el);
+            }, 250);
+        }
+
+        function baseLayout(title = '') {
             return {
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            boxWidth: 12,
-                            padding: 12,
-                            font: { size: 11 }
-                        }
+                title: title ? {
+                    text: title,
+                    font: {
+                        family: 'Inter, sans-serif',
+                        size: 14,
+                        color: '#1f2937'
                     },
-                    datalabels: {
-                        anchor: 'center',
-                        align: 'center',
-                        font: {
-                            weight: 'bold',
-                            size: 11
-                        },
-
-                        // 🔥 Dynamic text color
-                        color: function(context) {
-                            const bgColor = context.dataset.backgroundColor[context.dataIndex];
-
-                            // Remove rgba() if present
-                            let r, g, b;
-
-                            if (bgColor.startsWith('#')) {
-                                r = parseInt(bgColor.substr(1, 2), 16);
-                                g = parseInt(bgColor.substr(3, 2), 16);
-                                b = parseInt(bgColor.substr(5, 2), 16);
-                            } else if (bgColor.startsWith('rgb')) {
-                                const rgb = bgColor.match(/\d+/g);
-                                r = parseInt(rgb[0]);
-                                g = parseInt(rgb[1]);
-                                b = parseInt(rgb[2]);
-                            }
-
-                            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-
-                            return brightness < 128 ? '#ffffff' : '#000000';
-                        },
-
-                        formatter: (value, context) => {
-                            const data = context.chart.data.datasets[0].data;
-                            const total = data.reduce((a, b) => a + b, 0);
-                            const percentage = total ? (value / total) * 100 : 0;
-
-                            return percentage >= 3
-                                ? percentage.toFixed(1) + '%'
-                                : '';
-                        }
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 0.98
+                } : undefined,
+                margin: {
+                    t: 30,
+                    r: 30,
+                    b: 30,
+                    l: 30
+                },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: 'transparent',
+                font: {
+                    family: 'Inter, sans-serif',
+                    color: '#111827',
+                    size: 12
+                },
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 1.08,
+                    yanchor: 'bottom',
+                    font: {
+                        size: 11
                     }
-                }
+                },
+                autosize: true
             };
         }
 
-        function makeChart(canvasId, type, labels, values, colors) {
-            const el = $(canvasId);
-            if (!el) return null;
+        function renderPie(chartId, labels, values, colors, hole = 0, showPercent = true) {
+            const el = $(chartId);
+            if (!el) return;
 
             if (!labels.length || !values.length) {
-                toggleChartCard(canvasId, false);
-                return null;
+                toggleChartCard(chartId, false);
+                return;
             }
 
-            toggleChartCard(canvasId, true);
+            toggleChartCard(chartId, true);
 
-            return new Chart(el, {
-                type,
-                data: {
-                    labels,
-                    datasets: [{
-                        data: values,
-                        backgroundColor: colors,
-                        borderColor: '#fff',
-                        borderWidth: 2,
-                        hoverOffset: 8,
-                    }]
+            const total = values.reduce((a, b) => a + b, 0);
+
+            const trace = {
+                type: 'pie',
+                labels,
+                values,
+                hole,
+                sort: true,
+                direction: 'clockwise',
+                marker: {
+                    colors: colors.slice(0, labels.length),
+                    line: { color: '#ffffff', width: 2 }
                 },
-                options: pieOptions()
+                textinfo: showPercent ? 'percent' : 'none',
+                texttemplate: showPercent ? '%{percent:.1%}' : '',
+                textposition: 'outside',
+                automargin: true,
+                hovertemplate: '<b>%{label}</b><br>%{value:,.2f}<br>%{percent}<extra></extra>',
+                outsidetextfont: {
+                    family: 'Inter, sans-serif',
+                    size: 11,
+                    color: '#111827'
+                },
+                pull: 0,
+                domain: { x: [0.10, 0.90], y: [0.02, 0.72] },
+                connector: {
+                    line: {
+                        color: '#111827',
+                        width: 1
+                    }
+                }
+            };
+
+            const layout = {
+                ...baseLayout(),
+                margin: {
+                    t: 5,
+                    r: 5,
+                    b: 5,
+                    l: 5
+                },
+                showlegend: true,
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 1.08,
+                    yanchor: 'top',
+                    font: {
+                        size: 12
+                    }
+                },
+                uniformtext: {
+                    minsize: 10,
+                    mode: 'hide'
+                },
+                annotations: hole > 0 ? [
+                    {
+                        x: 0.5,
+                        y: 0.40,
+                        xref: 'paper',
+                        yref: 'paper',
+                        text: '<b>Total</b>',
+                        showarrow: false,
+                        font: {
+                            size: 13,
+                            color: '#6b7280',
+                            family: 'Inter, sans-serif'
+                        }
+                    },
+                    {
+                        x: 0.5,
+                        y: 0.31,
+                        xref: 'paper',
+                        yref: 'paper',
+                        text: `<b>${peso(total)}</b>`,
+                        showarrow: false,
+                        font: {
+                            size: 16,
+                            color: '#111827',
+                            family: 'Inter, sans-serif'
+                        }
+                    }
+                ] : []
+            };
+
+            Plotly.newPlot(chartId, [trace], layout, {
+                responsive: true,
+                displayModeBar: false
             });
+
+            safeResize(chartId);
+        }
+
+        function renderStackedBar(chartId, labels, seriesAName, seriesAData, seriesBName, seriesBData, colorA, colorB) {
+            const el = $(chartId);
+            if (!el) return;
+
+            if (!labels.length) {
+                toggleChartCard(chartId, false);
+                return;
+            }
+
+            toggleChartCard(chartId, true);
+
+            const totals = labels.map((_, i) => n(seriesAData[i]) + n(seriesBData[i]));
+
+            const trace1 = {
+                type: 'bar',
+                name: seriesAName,
+                x: labels,
+                y: seriesAData,
+                marker: { color: colorA },
+                hovertemplate: '<b>%{x}</b><br>' + seriesAName + ': %{y:,.2f}<extra></extra>'
+            };
+
+            const trace2 = {
+                type: 'bar',
+                name: seriesBName,
+                x: labels,
+                y: seriesBData,
+                marker: { color: colorB },
+                hovertemplate: '<b>%{x}</b><br>' + seriesBName + ': %{y:,.2f}<extra></extra>'
+            };
+
+            const totalLabels = {
+                type: 'scatter',
+                mode: 'text',
+                x: labels,
+                y: totals,
+                text: totals.map(v => `<b>${compactPeso(v)}</b>`),
+                textposition: 'top center',
+                textfont: {
+                    family: 'Inter, sans-serif',
+                    size: 11,
+                    color: '#111827'
+                },
+                hoverinfo: 'skip',
+                showlegend: false
+            };
+
+            const layout = {
+                ...baseLayout(),
+                barmode: 'stack',
+                margin: {
+                    t: 30,
+                    r: 40,
+                    b: 80,
+                    l: 80
+                },
+                legend: {
+                    orientation: 'h',
+                    x: 0.5,
+                    xanchor: 'center',
+                    y: 1.05,
+                    yanchor: 'bottom',
+                    font: { size: 11 }
+                },
+                xaxis: {
+                    tickangle: -18,
+                    automargin: true
+                },
+                yaxis: {
+                    rangemode: 'tozero',
+                    automargin: true,
+                    tickformat: '.3s',
+                    tickprefix: '₱'
+                }
+            };
+
+            Plotly.newPlot(chartId, [trace1, trace2, totalLabels], layout, {
+                responsive: true,
+                displayModeBar: false
+            });
+            safeResize(chartId);
+        }
+
+        function renderLine(chartId, labels, values, lineName) {
+            const el = $(chartId);
+            if (!el) return;
+
+            if (!labels.length || !values.length) {
+                toggleChartCard(chartId, false);
+                return;
+            }
+
+            toggleChartCard(chartId, true);
+
+            const trace = {
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: lineName,
+                x: labels,
+                y: values,
+                line: {
+                    color: '#16a34a',
+                    width: 3,
+                    shape: 'spline'
+                },
+                marker: {
+                    size: 8,
+                    color: '#16a34a'
+                },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(22,163,74,0.18)',
+                hovertemplate: '<b>%{x}</b><br>' + peso('%{y}') + '<extra></extra>'
+            };
+
+            const layout = {
+                ...baseLayout(),
+                margin: { t: 50, r: 30, b: 50, l: 70 },
+                xaxis: { automargin: true },
+                yaxis: {
+                    rangemode: 'tozero',
+                    tickprefix: '₱',
+                    tickformat: ','
+                }
+            };
+
+            Plotly.newPlot(chartId, [trace], layout, {
+                responsive: true,
+                displayModeBar: false,
+            });
+            safeResize(chartId);
         }
 
         async function fetchJson(url) {
@@ -503,11 +699,11 @@
         async function loadIncomeCharts() {
             const data = await fetchJson(`/api/income-data?year=${encodeURIComponent(selectedYear)}`);
 
-            // main pie = combine tuition + other (top4 + others)
             let allItems = [
                 ...(data.breakdown?.tuition_details || []),
                 ...(data.breakdown?.other_income_details || [])
             ];
+
             allItems = normalizeItems(allItems).sort((a, b) => b.value - a.value);
 
             if (allItems.length > 4) {
@@ -517,61 +713,37 @@
                 allItems = top4;
             }
 
-            makeChart(
+            renderPie(
                 'mainPieChart',
-                'pie',
                 allItems.map(i => i.name),
                 allItems.map(i => i.value),
-                chartColors
+                chartColors,
+                0,
+                true
             );
 
             const tuitionItems = normalizeItems(data.breakdown?.tuition_details);
-            makeChart(
+            renderPie(
                 'tuitionPieChart',
-                'pie',
                 tuitionItems.map(i => i.name),
                 tuitionItems.map(i => i.value),
-                chartColors
+                chartColors,
+                0,
+                true
             );
 
             const otherItems = normalizeItems(data.breakdown?.other_income_details);
-            makeChart(
+            renderPie(
                 'otherIncomePieChart',
-                'pie',
                 otherItems.map(i => i.name),
                 otherItems.map(i => i.value),
-                chartColors
+                chartColors,
+                0,
+                true
             );
 
-            // optional line chart
             if ($('sucIncomeLineChart')) {
-                new Chart($('sucIncomeLineChart'), {
-                    type: 'line',
-                    data: {
-                        labels: sucYears,
-                        datasets: [{
-                            label: 'Total SUC Income',
-                            data: sucTotals,
-                            tension: 0.4,
-                            borderWidth: 3,
-                            borderColor: '#16a34a',
-                            backgroundColor: 'rgba(22,163,74,0.2)',
-                            fill: true,
-                            pointRadius: 5,
-                            pointHoverRadius: 7
-                        }]
-                    },
-                    options: {
-                        plugins: {
-                            tooltip: {
-                                callbacks: { label: ctx => ' ₱' + Number(ctx.raw || 0).toLocaleString() }
-                            }
-                        },
-                        scales: {
-                            y: { ticks: { callback: v => '₱' + Number(v).toLocaleString() } }
-                        }
-                    }
-                });
+                renderLine('sucIncomeLineChart', sucYears, sucTotals, 'Total SUC Income');
             }
         }
 
@@ -579,43 +751,46 @@
         async function loadAllotmentCharts() {
             const data = await fetchJson(`/api/allotment-data?year=${encodeURIComponent(selectedYear)}`);
 
-            makeChart(
+            renderPie(
                 'allotmentPieChart',
-                'pie',
                 ['GAA Allotment', 'SUC Income Allotment'],
                 [n(data.gaa?.total), n(data.suc_income?.total)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700'],
+                0,
+                true
             );
 
             const totalPS = n(data.gaa?.ps) + n(data.suc_income?.ps);
             const totalMOOE = n(data.gaa?.mooe) + n(data.suc_income?.mooe);
             const totalCO = n(data.gaa?.co) + n(data.suc_income?.co);
 
-            makeChart(
+            renderPie(
                 'allotmentCategoryChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [totalPS, totalMOOE, totalCO],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
-            makeChart(
+            renderPie(
                 'allotmentGAAChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [n(data.gaa?.ps), n(data.gaa?.mooe), n(data.gaa?.co)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
-            makeChart(
+            renderPie(
                 'allotmentSUCChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [n(data.suc_income?.ps), n(data.suc_income?.mooe), n(data.suc_income?.co)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
-            // function stacked bar
             const rows = (data.breakdown || [])
                 .map(r => ({
                     fn: String(r.function || '').trim(),
@@ -624,72 +799,16 @@
                 }))
                 .filter(r => (r.gaa + r.suc) > 0);
 
-            if (!$('allotmentFunctionChart')) return;
-            if (!rows.length) { toggleChartCard('allotmentFunctionChart', false); return; }
-            toggleChartCard('allotmentFunctionChart', true);
-
-            new Chart($('allotmentFunctionChart'), {
-                type: 'bar',
-                data: {
-                    labels: rows.map(r => r.fn),
-                    datasets: [
-                        { label: 'GAA Allotment', data: rows.map(r => r.gaa), backgroundColor: '#007B3E', borderWidth: 1 },
-                        { label: 'SUC Income Allotment', data: rows.map(r => r.suc), backgroundColor: '#FFD700', borderWidth: 1 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        x: { stacked: true },
-                        y: {
-                            stacked: true,
-                            beginAtZero: true,
-                            ticks: {
-                                stepSize: 50_000_000,
-                                callback: function(value) {
-                                    if (value >= 1_000_000_000) {
-                                        return '₱' + (value / 1_000_000_000) + 'B';
-                                    } else if (value >= 1_000_000) {
-                                        return '₱' + (value / 1_000_000) + 'M';
-                                    } else if (value >= 1_000) {
-                                        return '₱' + (value / 1_000) + 'K';
-                                    } else {
-                                        return '₱' + value;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-    datalabels: {
-        color: '#111',
-        anchor: 'end',
-        align: 'end',
-        font: {
-            weight: 'bold',
-            size: 12
-        },
-        formatter: function(value, context) {
-            const chart = context.chart;
-            const dataIndex = context.dataIndex;
-
-            let total = 0;
-            chart.data.datasets.forEach(dataset => {
-                total += dataset.data[dataIndex] || 0;
-            });
-
-            // Show only on top dataset
-            if (context.datasetIndex === chart.data.datasets.length - 1) {
-                return '₱' + total.toLocaleString('en-US');
-            }
-
-            return '';
-        }
-    }
-}
-                }
-            });
+            renderStackedBar(
+                'allotmentFunctionChart',
+                rows.map(r => r.fn),
+                'GAA Allotment',
+                rows.map(r => r.gaa),
+                'SUC Income Allotment',
+                rows.map(r => r.suc),
+                '#007B3E',
+                '#FFD700'
+            );
 
             return data;
         }
@@ -698,40 +817,44 @@
         async function loadExpenditureCharts() {
             const expData = await fetchJson(`/api/expenditure-data?year=${encodeURIComponent(selectedYear)}`);
 
-            makeChart(
+            renderPie(
                 'expenditurePieChart',
-                'pie',
                 ['GAA Expenditure', 'SUC Income Expenditure'],
                 [n(expData.gaa?.total), n(expData.suc_income?.total)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700'],
+                0,
+                true
             );
 
             const ePS = n(expData.gaa?.ps) + n(expData.suc_income?.ps);
             const eMOOE = n(expData.gaa?.mooe) + n(expData.suc_income?.mooe);
             const eCO = n(expData.gaa?.co) + n(expData.suc_income?.co);
 
-            makeChart(
+            renderPie(
                 'expenditureCategoryChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [ePS, eMOOE, eCO],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
-            makeChart(
+            renderPie(
                 'expenditureGAAChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [n(expData.gaa?.ps), n(expData.gaa?.mooe), n(expData.gaa?.co)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
-            makeChart(
+            renderPie(
                 'expenditureSUCChart',
-                'doughnut',
                 ['Personal Services (PS)', 'Maintenance and Other Operating Expenses (MOOE)', 'Capital Outlay (CO)'],
                 [n(expData.suc_income?.ps), n(expData.suc_income?.mooe), n(expData.suc_income?.co)],
-                ['#007B3E', '#FFD700', '#39EDFF']
+                ['#007B3E', '#FFD700', '#39EDFF'],
+                0.55,
+                true
             );
 
             const rows = (expData.breakdown || [])
@@ -742,106 +865,39 @@
                 }))
                 .filter(r => (r.gaa + r.suc) > 0);
 
-            if (!rows.length) {
-                toggleChartCard('expenditureFunctionChart', false);
-                toggleChartCard('expenditureComparisonChart', false);
-                return;
-            }
+            renderStackedBar(
+                'expenditureFunctionChart',
+                rows.map(r => r.fn),
+                'GAA Expenditure',
+                rows.map(r => r.gaa),
+                'SUC Income Expenditure',
+                rows.map(r => r.suc),
+                '#007B3E',
+                '#FFD700'
+            );
+        }
 
-            // stacked
-            if ($('expenditureFunctionChart')) {
-                toggleChartCard('expenditureFunctionChart', true);
-                new Chart($('expenditureFunctionChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: rows.map(r => r.fn),
-                        datasets: [
-                            { label: 'GAA Expenditure', data: rows.map(r => r.gaa), backgroundColor: '#007B3E' },
-                            { label: 'SUC Income Expenditure', data: rows.map(r => r.suc), backgroundColor: '#FFD700' }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-
-                        scales: {
-                            x: { stacked: true },
-                            y: {
-                                stacked: true,
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        if (value >= 1_000_000_000) {
-                                            return '₱' + (value / 1_000_000_000) + 'B';
-                                        } else if (value >= 1_000_000) {
-                                            return '₱' + (value / 1_000_000) + 'M';
-                                        } else if (value >= 1_000) {
-                                            return '₱' + (value / 1_000) + 'K';
-                                        } else {
-                                            return '₱' + value;
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        plugins: {
-    datalabels: {
-        color: '#111',
-        anchor: 'end',
-        align: 'end',
-        font: {
-            weight: 'bold',
-            size: 12
-        },
-        formatter: function(value, context) {
-            const chart = context.chart;
-            const dataIndex = context.dataIndex;
-
-            let total = 0;
-            chart.data.datasets.forEach(dataset => {
-                total += dataset.data[dataIndex] || 0;
+        window.addEventListener('resize', () => {
+            [
+                'mainPieChart',
+                'tuitionPieChart',
+                'otherIncomePieChart',
+                'allotmentPieChart',
+                'allotmentCategoryChart',
+                'allotmentGAAChart',
+                'allotmentSUCChart',
+                'allotmentFunctionChart',
+                'expenditurePieChart',
+                'expenditureCategoryChart',
+                'expenditureGAAChart',
+                'expenditureSUCChart',
+                'expenditureFunctionChart',
+                'sucIncomeLineChart'
+            ].forEach(id => {
+                if ($(id)) Plotly.Plots.resize($(id));
             });
+        });
 
-            // Show only on top dataset
-            if (context.datasetIndex === chart.data.datasets.length - 1) {
-                return '₱' + total.toLocaleString('en-US');
-            }
-
-            return '';
-        }
-    }
-}
-                    }
-                });
-            }
-
-            // comparison (not stacked)
-            if ($('expenditureComparisonChart')) {
-                toggleChartCard('expenditureComparisonChart', true);
-                new Chart($('expenditureComparisonChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: rows.map(r => r.fn),
-                        datasets: [
-                            { label: 'GAA Expenditure', data: rows.map(r => r.gaa), backgroundColor: '#ef4444' },
-                            { label: 'SUC Income Expenditure', data: rows.map(r => r.suc), backgroundColor: '#f97316' }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: { callback: v => '₱' + Number(v).toLocaleString() }
-                            }
-                        }
-                    }
-                });
-            }
-        }
-
-        // ---------- boot ----------
         (async function init() {
             try {
                 if (filterType === 'all' || filterType === 'suc_income') {

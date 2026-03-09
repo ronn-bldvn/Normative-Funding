@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FundingController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\GraduatesController;
+use Illuminate\Support\Facades\DB;
+use App\Models\FundReport;
 
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -32,16 +34,11 @@ Route::get('/api/faculty-pie', [FacultyController::class, 'facultyPie'])->name('
 
 Route::get('/graduates', [GraduatesController::class, 'index'])->name('graduates');
 
-Route::prefix('api')->name('api.graduates.')->group(function () {
-    Route::get('graduates-summary',           [GraduatesController::class, 'summary'])        ->name('summary');
-    Route::get('graduates-by-college',        [GraduatesController::class, 'byCollege'])      ->name('by-college');
-    Route::get('graduates-gender-by-college', [GraduatesController::class, 'genderByCollege'])->name('gender-by-college');
-    Route::get('graduates-by-program',        [GraduatesController::class, 'byProgram'])      ->name('by-program');
+Route::prefix('api/graduates')->name('api.graduates.')->group(function () {
+    Route::get('/filters', [GraduatesController::class, 'filters'])->name('filters');
+    Route::get('/dashboard', [GraduatesController::class, 'dashboard'])->name('dashboard');
 });
 
-
-use Illuminate\Support\Facades\DB;
-use App\Models\FundReport;
 
 Route::get('/debug-db', function () {
     return [

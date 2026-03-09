@@ -4,262 +4,519 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\View\View;
 
-/**
- * GraduatesController
- *
- * Handles the Graduates page and related API endpoints.
- * Reads directly from the `graduates` DB table instead of an Excel file.
- *
- * Table columns: student_id, first_name, last_name, gender,
- *                program_name, program_major, college, date_graduated
- */
 class GraduatesController extends Controller
 {
-    // -------------------------------------------------------------------------
-    // PAGES
-    // -------------------------------------------------------------------------
-
-    /**
-     * GET /graduates
-     */
     public function index(Request $request): View
     {
-        // College dropdown — distinct values, sorted
-        $colleges = DB::table('graduates')
-            ->select('college')
-            ->whereNotNull('college')
-            ->where('college', '!=', '')
-            ->distinct()
-            ->orderBy('college')
-            ->pluck('college')
-            ->all();
+        $viewType     = $request->query('view_type', 'graduate_headcount');
+        $studentLevel = $request->query('student_level', 'All');
+        $semester     = $request->query('semester', 'All');
+        $college      = $request->query('college', 'All');
+        $program      = $request->query('program', 'All');
 
-        $selectedCollege = $request->query('college', 'All');
+        $filterOptions = $this->getFilterOptions($college, $studentLevel, $semester);
 
-        // Totals
-        $query = DB::table('graduates');
-        if ($selectedCollege !== 'All') {
-            $query->where('college', $selectedCollege);
+        // Force program to All when college is All
+        if ($college === 'All') {
+            $program = 'All';
         }
 
-        $totalGraduates = (clone $query)->count();
-        $totalMale      = (clone $query)->whereRaw("LOWER(gender) IN ('male','m')")->count();
-        $totalFemale    = (clone $query)->whereRaw("LOWER(gender) IN ('female','f')")->count();
-
-        return view('graduates', [
-            'active_page'     => 'graduates',
-            'colleges'        => $colleges,
-            'selected_college' => $selectedCollege,
-            'total_graduates' => $totalGraduates,
-            'total_male'      => $totalMale,
-            'total_female'    => $totalFemale,
-        ]);
-    }
-
-    // -------------------------------------------------------------------------
-    // API ENDPOINTS
-    // -------------------------------------------------------------------------
-
-    /**
-     * GET /api/graduates-summary
-     * Returns male/female count for a selected college (or All).
-     */
-    public function summary(Request $request): JsonResponse
-    {
-        $selectedCollege = $request->query('college', 'All');
-
-        $query = DB::table('graduates');
-        if ($selectedCollege !== 'All') {
-            $query->where('college', $selectedCollege);
+        // If selected program is not in the allowed program list for the selected college, reset it
+        if ($program !== 'All' && !in_array($program, $filterOptions['programs'], true)) {
+            $program = 'All';
         }
 
-        $male   = (clone $query)->whereRaw("LOWER(gender) IN ('male','m')")->count();
-        $female = (clone $query)->whereRaw("LOWER(gender) IN ('female','f')")->count();
+        $payload = $this->buildDashboardData($viewType, $studentLevel, $semester, $college, $program);
 
-        return response()->json(['male' => $male, 'female' => $female]);
+        return view('graduates', array_merge($payload, [
+            'active_page'      => 'graduates',
+            'view_type'        => $viewType,
+            'selected_view_type' => $viewType,
+            'student_level'    => $studentLevel,
+            'semester'         => $semester,
+            'selected_college' => $college,
+            'selected_program' => $program,
+            'colleges'         => $filterOptions['colleges'],
+            'programs'         => $filterOptions['programs'],
+            'semesters'        => $filterOptions['semesters'],
+        ]));
     }
 
-    /**
-     * GET /api/graduates-by-college
-     * Returns count and percentage per college.
-     */
-    public function byCollege(Request $request): JsonResponse
+    public function filters(Request $request): JsonResponse
     {
-        $rows = DB::table('graduates')
-            ->select('college', DB::raw('COUNT(*) as total'))
-            ->whereNotNull('college')
-            ->where('college', '!=', '')
-            ->groupBy('college')
-            ->orderBy('college')   // mirrors pandas sort_index()
-            ->get();
+        $college      = $request->query('college', 'All');
+        $studentLevel = $request->query('student_level', 'All');
+        $semester     = $request->query('semester', 'All');
 
-        $labels  = $rows->pluck('college')->all();
-        $values  = $rows->pluck('total')->map(fn($v) => (int) $v)->all();
-        $total   = array_sum($values);
-        $percents = array_map(
-            fn($v) => $total > 0 ? round(($v / $total) * 100, 1) : 0,
-            $values
+        return response()->json(
+            $this->getFilterOptions($college, $studentLevel, $semester)
         );
-
-        return response()->json([
-            'labels'   => $labels,
-            'values'   => $values,
-            'percents' => $percents,
-        ]);
     }
 
-    /**
-     * GET /api/graduates-gender-by-college
-     * Returns male/female breakdown per college.
-     */
-    public function genderByCollege(Request $request): JsonResponse
+    public function dashboard(Request $request): JsonResponse
     {
-        // Pull male counts per college
-        $maleRows = DB::table('graduates')
-            ->select('college', DB::raw('COUNT(*) as cnt'))
-            ->whereNotNull('college')
-            ->where('college', '!=', '')
-            ->whereRaw("LOWER(gender) IN ('male','m')")
-            ->groupBy('college')
-            ->orderBy('college')
-            ->pluck('cnt', 'college');
+        $viewType     = $request->query('view_type', 'graduate_headcount');
+        $studentLevel = $request->query('student_level', 'All');
+        $semester     = $request->query('semester', 'All');
+        $college      = $request->query('college', 'All');
+        $program      = $request->query('program', 'All');
 
-        // Pull female counts per college
-        $femaleRows = DB::table('graduates')
-            ->select('college', DB::raw('COUNT(*) as cnt'))
-            ->whereNotNull('college')
-            ->where('college', '!=', '')
-            ->whereRaw("LOWER(gender) IN ('female','f')")
-            ->groupBy('college')
-            ->orderBy('college')
-            ->pluck('cnt', 'college');
+        $filterOptions = $this->getFilterOptions($college, $studentLevel, $semester);
 
-        // Union of all colleges, sorted
-        $labels = collect($maleRows->keys()->merge($femaleRows->keys()))
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
+        if ($college === 'All') {
+            $program = 'All';
+        }
 
-        $maleVals   = array_map(fn($c) => (int)($maleRows[$c]   ?? 0), $labels);
-        $femaleVals = array_map(fn($c) => (int)($femaleRows[$c] ?? 0), $labels);
+        if ($program !== 'All' && !in_array($program, $filterOptions['programs'], true)) {
+            $program = 'All';
+        }
 
-        return response()->json([
-            'labels' => $labels,
-            'male'   => $maleVals,
-            'female' => $femaleVals,
-        ]);
+        return response()->json(
+            $this->buildDashboardData($viewType, $studentLevel, $semester, $college, $program)
+        );
     }
 
-    /**
-     * GET /api/graduates-by-program
-     * Returns top-N programs by graduate count, with optional college filter.
-     */
-    public function byProgram(Request $request): JsonResponse
+    private function getBaseQuery()
     {
-        $college = $request->query('college', 'All');
-        $topN    = max(1, (int) $request->query('top', 8));
+        return DB::table('graduates')
+            ->select([
+                'student_id',
+                'gender',
+                'college',
+                'program_name',
+                'program_major',
+                'date_graduated',
+                DB::raw("
+                    CASE
+                        WHEN MONTH(date_graduated) = 2 THEN 'Midyear'
+                        ELSE 'Annual'
+                    END as derived_semester
+                "),
+                DB::raw("
+                    CASE
+                        WHEN LOWER(program_name) LIKE '%master%'
+                          OR LOWER(program_name) LIKE '%doctoral%'
+                          OR LOWER(program_name) LIKE '%phd%'
+                          OR LOWER(program_name) LIKE '%graduate%'
+                        THEN 'Postgraduate'
+                        ELSE 'Undergraduate'
+                    END as derived_student_level
+                "),
+            ])
+            ->whereNotNull('date_graduated');
+    }
 
-        // Major alias map (mirrors Python MAJOR_ALIASES)
-        $majorAliases = [
-            'system development'    => 'systems development',
-            'fashion merchandizing' => 'fashion merchandising',
-            'doctor of philosophy in development education'
-                => 'doctor of philosophy in development education (dot-uni)',
-        ];
+    private function applyFilters($query, string $studentLevel, string $semester, string $college, string $program)
+    {
+        if ($studentLevel !== 'All') {
+            $query->whereRaw("
+                CASE
+                    WHEN LOWER(program_name) LIKE '%master%'
+                      OR LOWER(program_name) LIKE '%doctoral%'
+                      OR LOWER(program_name) LIKE '%phd%'
+                      OR LOWER(program_name) LIKE '%graduate%'
+                    THEN 'Postgraduate'
+                    ELSE 'Undergraduate'
+                END = ?
+            ", [$studentLevel]);
+        }
 
-        $noMajorSentinels = ['', 'nan', 'none', 'n/a'];
-
-        // ── Pull relevant rows from DB ────────────────────────────────────────
-        $query = DB::table('graduates')
-            ->select('program_name', 'program_major')
-            ->whereNotNull('program_name')
-            ->where('program_name', '!=', '');
+        if ($semester !== 'All') {
+            $query->whereRaw("
+                CASE
+                    WHEN MONTH(date_graduated) = 2 THEN 'Midyear'
+                    ELSE 'Annual'
+                END = ?
+            ", [$semester]);
+        }
 
         if ($college !== 'All') {
             $query->where('college', $college);
         }
 
-        $rows = $query->get();
-
-        if ($rows->isEmpty()) {
-            return response()->json(['items' => []]);
+        if ($program !== 'All') {
+            $query->where('program_name', $program);
         }
 
-        // ── Normalisation helpers ─────────────────────────────────────────────
-        $cleanText = function ($x): string {
-            if ($x === null) return '';
-            return trim(preg_replace('/\s+/', ' ', (string) $x));
-        };
+        return $query;
+    }
 
-        $normalizeKey = function (string $s) use ($cleanText): string {
-            $s = strtolower($cleanText($s));
-            $s = str_replace(['–', '—'], '-', $s);
-            return trim(preg_replace('/\s+/', ' ', $s));
-        };
+    private function getFilterOptions(string $college = 'All', string $studentLevel = 'All', string $semester = 'All'): array
+    {
+        $colleges = DB::table('graduates')
+            ->whereNotNull('college')
+            ->where('college', '!=', '')
+            ->distinct()
+            ->orderBy('college')
+            ->pluck('college')
+            ->values()
+            ->all();
 
-        $normalizeMajorKey = function (string $m) use ($normalizeKey, $majorAliases): string {
-            $mk = $normalizeKey($m);
-            return $majorAliases[$mk] ?? $mk;
-        };
+        $programQuery = DB::table('graduates')
+            ->whereNotNull('date_graduated')
+            ->whereNotNull('program_name')
+            ->where('program_name', '!=', '');
 
-        // ── Build composite key counts ────────────────────────────────────────
-        $keyCounts = [];
-        $keyData   = [];
-
-        foreach ($rows as $row) {
-            $programName = $cleanText($row->program_name  ?? '');
-            $cleanMajor  = $cleanText($row->program_major ?? '');
-
-            $isMajorEmpty = in_array(strtolower($cleanMajor), $noMajorSentinels, true);
-            $majorPart    = $isMajorEmpty ? 'NO_MAJOR' : $normalizeMajorKey($cleanMajor);
-
-            $key = $normalizeKey($programName) . '||' . $majorPart;
-
-            $keyCounts[$key] = ($keyCounts[$key] ?? 0) + 1;
-
-            $keyData[$key]['program_names'][] = $programName;
-            if (!$isMajorEmpty) {
-                $keyData[$key]['majors'][] = $cleanMajor;
-            }
+        if ($studentLevel !== 'All') {
+            $programQuery->whereRaw("
+                CASE
+                    WHEN LOWER(program_name) LIKE '%master%'
+                      OR LOWER(program_name) LIKE '%doctoral%'
+                      OR LOWER(program_name) LIKE '%phd%'
+                      OR LOWER(program_name) LIKE '%graduate%'
+                    THEN 'Postgraduate'
+                    ELSE 'Undergraduate'
+                END = ?
+            ", [$studentLevel]);
         }
 
-        // ── Sort desc, take top N ─────────────────────────────────────────────
-        arsort($keyCounts);
-        $topKeys = array_slice(array_keys($keyCounts), 0, $topN, true);
+        if ($semester !== 'All') {
+            $programQuery->whereRaw("
+                CASE
+                    WHEN MONTH(date_graduated) = 2 THEN 'Midyear'
+                    ELSE 'Annual'
+                END = ?
+            ", [$semester]);
+        }
 
-        $items = [];
-        foreach ($topKeys as $key) {
-            $programNames = $keyData[$key]['program_names'] ?? [];
-            $majors       = $keyData[$key]['majors']        ?? [];
-
-            $items[] = [
-                'program_name' => $this->mode($programNames),
-                'major'        => !empty($majors) ? $this->mode($majors) : null,
-                'count'        => $keyCounts[$key],
+        if ($college !== 'All') {
+            $programQuery->where('college', $college);
+        } else {
+            return [
+                'colleges'       => $colleges,
+                'programs'       => [],
+                'semesters'      => ['Annual', 'Midyear'],
+                'student_levels' => ['Undergraduate', 'Postgraduate'],
+                'view_types'     => [
+                    ['value' => 'graduate_headcount', 'label' => 'Graduate Headcount'],
+                    ['value' => 'demographic_profile', 'label' => 'Demographic Profile'],
+                ],
             ];
         }
 
-        return response()->json(['items' => $items]);
+        $programs = $programQuery
+            ->select('program_name')
+            ->distinct()
+            ->orderBy('program_name')
+            ->pluck('program_name')
+            ->values()
+            ->all();
+
+        return [
+            'colleges'       => $colleges,
+            'programs'       => $programs,
+            'semesters'      => ['Annual', 'Midyear'],
+            'student_levels' => ['Undergraduate', 'Postgraduate'],
+            'view_types'     => [
+                ['value' => 'graduate_headcount', 'label' => 'Graduate Headcount'],
+                ['value' => 'demographic_profile', 'label' => 'Demographic Profile'],
+            ],
+        ];
     }
 
-    // -------------------------------------------------------------------------
-    // PRIVATE HELPERS
-    // -------------------------------------------------------------------------
+    private function buildDashboardData(
+        string $viewType,
+        string $studentLevel,
+        string $semester,
+        string $college,
+        string $program
+    ): array {
+        // Safety: never allow specific program while college = All
+        if ($college === 'All') {
+            $program = 'All';
+        }
+
+        $query       = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program);
+        $allFiltered = (clone $query)->get();
+
+        $totalGraduates = $allFiltered->count();
+        $maleCount      = $allFiltered->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+        $femaleCount    = $allFiltered->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+
+        $undergradCount  = $allFiltered->where('derived_student_level', 'Undergraduate')->count();
+        $postgradCount   = $allFiltered->where('derived_student_level', 'Postgraduate')->count();
+
+        $undergradMale   = $allFiltered->where('derived_student_level', 'Undergraduate')
+                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+        $undergradFemale = $allFiltered->where('derived_student_level', 'Undergraduate')
+                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+        $postgradMale    = $allFiltered->where('derived_student_level', 'Postgraduate')
+                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+        $postgradFemale  = $allFiltered->where('derived_student_level', 'Postgraduate')
+                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+
+        $dynamicTitle = $this->makeDynamicTitle($viewType, $studentLevel, $semester, $college, $program);
+        $groupField   = $college === 'All' ? 'college' : 'program_name';
+
+        // ── Ranking rows (always ungrouped by program for the ranking bar) ───────
+        $rankingRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
+            ->select($groupField . ' as group_name', DB::raw('COUNT(*) as total'))
+            ->whereNotNull($groupField)
+            ->where($groupField, '!=', '')
+            ->groupBy($groupField)
+            ->orderByDesc('total')
+            ->get();
+
+        $rankingLabels = $rankingRows->pluck('group_name')->all();
+        $rankingValues = $rankingRows->pluck('total')->map(fn($v) => (int) $v)->all();
+
+        // ── Donut rows ────────────────────────────────────────────────────────────
+        $donutRows    = $rankingRows;
+        $donutTotal   = max(1, $donutRows->sum('total'));
+        $donutPercents = $donutRows->map(fn($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
+
+        // ── Major chart — only when a specific program is selected ────────────────
+        // Shows the breakdown of program_major inside the selected program.
+        // If the program has no majors (all NULL / empty), major_chart is null
+        // and the blade will fall back to the normal donut.
+        $majorChart = null;
+
+        if ($program !== 'All') {
+            $majorRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program)
+                ->select('program_major as major', DB::raw('COUNT(*) as total'))
+                ->whereNotNull('program_major')
+                ->where('program_major', '!=', '')
+                ->groupBy('program_major')
+                ->orderByDesc('total')
+                ->get();
+
+            if ($majorRows->isNotEmpty()) {
+                $majorTotal = max(1, $majorRows->sum('total'));
+
+                $majorChart = [
+                    'title'    => $this->makeMajorDonutTitle($studentLevel, $program),
+                    'labels'   => $majorRows->pluck('major')->all(),
+                    'values'   => $majorRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+                    'percents' => $majorRows->map(fn($r) => round(($r->total / $majorTotal) * 100, 1))->values()->all(),
+                ];
+            }
+        }
+
+        // ── Stacked sex distribution ──────────────────────────────────────────────
+        // When a specific program is selected, group by program_major instead;
+        // fall back to the normal groupField if there are no recorded majors.
+        $sexGroupField  = ($program !== 'All') ? 'program_major' : $groupField;
+        $sexProgramFilter = ($program !== 'All') ? $program : 'All';
+
+        $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $sexProgramFilter)
+            ->select(
+                $sexGroupField . ' as group_name',
+                DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
+                DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
+                DB::raw("COUNT(*) as total_count")
+            )
+            ->whereNotNull($sexGroupField)
+            ->where($sexGroupField, '!=', '')
+            ->groupBy($sexGroupField)
+            ->orderBy($sexGroupField)
+            ->get();
+
+        // If program is selected but has no majors, fall back to normal program grouping
+        if ($program !== 'All' && $sexRows->isEmpty()) {
+            $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
+                ->select(
+                    $groupField . ' as group_name',
+                    DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
+                    DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
+                    DB::raw("COUNT(*) as total_count")
+                )
+                ->whereNotNull($groupField)
+                ->where($groupField, '!=', '')
+                ->groupBy($groupField)
+                ->orderBy($groupField)
+                ->get();
+        }
+
+        $stackLabels      = [];
+        $stackMalePct     = [];
+        $stackFemalePct   = [];
+        $stackMaleCount   = [];
+        $stackFemaleCount = [];
+
+        foreach ($sexRows as $row) {
+            $total    = max(1, (int) $row->total_count);
+            $male     = (int) $row->male_count;
+            $female   = (int) $row->female_count;
+
+            $stackLabels[]      = $row->group_name;
+            $stackMaleCount[]   = $male;
+            $stackFemaleCount[] = $female;
+            $stackMalePct[]     = round(($male   / $total) * 100, 1);
+            $stackFemalePct[]   = round(($female / $total) * 100, 1);
+        }
+
+        return [
+            'page_title_text'    => 'Graduates Overview',
+            'dynamic_title'      => $dynamicTitle,
+            'selected_view_type' => $viewType,
+
+            'value_boxes' => $viewType === 'graduate_headcount'
+                ? [
+                    ['title' => 'Total University Graduates',        'value' => $totalGraduates],
+                    ['title' => 'Undergraduate Level Graduates',     'value' => $undergradCount],
+                    ['title' => 'Postgraduate Level Graduates',      'value' => $postgradCount],
+                ]
+                : [
+                    ['title' => 'Total University Graduates',    'value' => $totalGraduates],
+                    ['title' => 'Undergraduate Level Graduates', 'value' => ['male' => $undergradMale, 'female' => $undergradFemale]],
+                    ['title' => 'Postgraduate Level Graduates',  'value' => ['male' => $postgradMale,  'female' => $postgradFemale]],
+                ],
+
+            'pie_chart' => $this->makePieChart($studentLevel, $maleCount, $femaleCount, $undergradMale, $undergradFemale, $postgradMale, $postgradFemale),
+
+            'donut_chart' => [
+                'title'    => $this->makeDonutTitle($studentLevel, $college, $program),
+                'labels'   => $donutRows->pluck('group_name')->all(),
+                'values'   => $donutRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+                'percents' => $donutPercents,
+            ],
+
+            // null when no program selected, or when the program has no majors in DB
+            'major_chart' => $majorChart,
+
+            'ranking_chart' => [
+                'title'        => 'Ranking of Graduates Count by ' . ($college === 'All' ? 'College' : 'Program'),
+                'labels'       => $rankingLabels,
+                'values'       => $rankingValues,
+                'highlight'    => $program !== 'All' ? $program : null,
+                'y_axis_label' => $college === 'All' ? 'Colleges' : 'Programs',
+                'x_axis_label' => 'Number of Graduates',
+            ],
+
+            'stacked_chart' => [
+                'title'        => $this->makeStackedTitle($studentLevel, $college, $program, !empty($stackLabels) && $program !== 'All' && $sexGroupField === 'program_major'),
+                'labels'       => $stackLabels,
+                'male_pct'     => $stackMalePct,
+                'female_pct'   => $stackFemalePct,
+                'male_count'   => $stackMaleCount,
+                'female_count' => $stackFemaleCount,
+                'y_axis_label' => $college === 'All'
+                    ? 'College'
+                    : ($program !== 'All' && !empty($stackLabels) ? 'Major' : 'Program'),
+            ],
+        ];
+    }
+
+    private function makeDynamicTitle(
+        string $viewType,
+        string $studentLevel,
+        string $semester,
+        string $college,
+        string $program
+    ): string {
+        if ($viewType !== 'graduate_headcount') {
+            return 'Graduates Overview';
+        }
+
+        $levelText    = $studentLevel === 'All' ? 'All Levels' : $studentLevel . ' Level';
+        $semesterText = $semester === 'All' ? 'All Periods' : $semester;
+
+        if ($program !== 'All') {
+            return "Total Graduates: {$program} {$levelText} ({$semesterText})";
+        }
+
+        if ($college !== 'All') {
+            return "Total Graduates: {$college} {$levelText} ({$semesterText})";
+        }
+
+        return "Total Graduates: {$levelText} ({$semesterText})";
+    }
+
+    private function makeDonutTitle(string $studentLevel, string $college, string $program): string
+    {
+        $levelText = $studentLevel === 'All' ? 'All Level' : $studentLevel . ' Level';
+
+        if ($program !== 'All') {
+            return "Percentage of {$program} {$levelText} Graduates";
+        }
+
+        if ($college !== 'All') {
+            return "Percentage of {$college} {$levelText} Graduates";
+        }
+
+        return "Percentage of University Graduates by College";
+    }
 
     /**
-     * Return the most-frequent value in an array (simple mode).
+     * Title for the major breakdown donut shown when a program is selected
+     * and that program has recorded majors.
      */
-    private function mode(array $values): ?string
+    private function makeMajorDonutTitle(string $studentLevel, string $program): string
     {
-        if (empty($values)) return null;
+        $levelText = $studentLevel === 'All' ? 'All Level' : $studentLevel . ' Level';
+        return "Percentage of {$program} {$levelText} Graduates by Major";
+    }
 
-        $counts = array_count_values($values);
-        arsort($counts);
+    private function makeStackedTitle(
+        string $studentLevel,
+        string $college,
+        string $program,
+        bool $hasMajors = false
+    ): string {
+        if ($college === 'All' && $studentLevel === 'All') {
+            return 'Total University Graduates Sex Distribution';
+        }
 
-        return (string) array_key_first($counts);
+        if ($college === 'All' && $studentLevel === 'Undergraduate') {
+            return 'Total Undergraduate Level Graduates Sex Distribution';
+        }
+
+        if ($college === 'All' && $studentLevel === 'Postgraduate') {
+            return 'Total Postgraduate Level Graduates Sex Distribution';
+        }
+
+        $level = $studentLevel === 'All' ? 'All Level' : $studentLevel . ' Level';
+
+        if ($college !== 'All' && $program === 'All') {
+            return "{$level} Graduates Sex Distribution of {$college}";
+        }
+
+        // Program selected with majors → show "by Major"
+        if ($program !== 'All' && $hasMajors) {
+            return "{$level} Graduates Sex Distribution of {$program} by Major";
+        }
+
+        return "{$level} Graduates Sex Distribution of {$program}";
+    }
+
+    /**
+     * Build the pie chart data for the Demographic Profile view.
+     * Respects the selected student level filter:
+     *   - All          → total male / female across all levels
+     *   - Undergraduate → undergraduate male / female only
+     *   - Postgraduate  → postgraduate male / female only
+     */
+    private function makePieChart(
+        string $studentLevel,
+        int $maleCount,
+        int $femaleCount,
+        int $undergradMale,
+        int $undergradFemale,
+        int $postgradMale,
+        int $postgradFemale
+    ): array {
+        switch ($studentLevel) {
+            case 'Undergraduate':
+                return [
+                    'title'  => 'Percentage of Undergraduate Level Graduates by Sex',
+                    'labels' => ['Male', 'Female'],
+                    'values' => [$undergradMale, $undergradFemale],
+                ];
+            case 'Postgraduate':
+                return [
+                    'title'  => 'Percentage of Postgraduate Level Graduates by Sex',
+                    'labels' => ['Male', 'Female'],
+                    'values' => [$postgradMale, $postgradFemale],
+                ];
+            default: // 'All'
+                return [
+                    'title'  => 'Percentage of All Graduates by Sex',
+                    'labels' => ['Male', 'Female'],
+                    'values' => [$maleCount, $femaleCount],
+                ];
+        }
     }
 }
