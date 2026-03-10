@@ -115,9 +115,9 @@ class GraduatesController extends Controller
             $query->whereRaw("
                 CASE
                     WHEN LOWER(program_name) LIKE '%master%'
-                      OR LOWER(program_name) LIKE '%doctoral%'
-                      OR LOWER(program_name) LIKE '%phd%'
-                      OR LOWER(program_name) LIKE '%graduate%'
+                    OR LOWER(program_name) LIKE '%doctoral%'
+                    OR LOWER(program_name) LIKE '%phd%'
+                    OR LOWER(program_name) LIKE '%graduate%'
                     THEN 'Postgraduate'
                     ELSE 'Undergraduate'
                 END = ?
@@ -134,11 +134,11 @@ class GraduatesController extends Controller
         }
 
         if ($college !== 'All') {
-            $query->where('college', $college);
+            $query->whereIn('college', $this->getCollegeAliases($college));
         }
 
         if ($program !== 'All') {
-            $query->where('program_name', $program);
+            $query->whereIn('program_name', $this->getProgramAliases($program));
         }
 
         return $query;
@@ -146,27 +146,44 @@ class GraduatesController extends Controller
 
     private function getFilterOptions(string $college = 'All', string $studentLevel = 'All', string $semester = 'All'): array
     {
-        $colleges = DB::table('graduates')
+        $rawColleges = DB::table('graduates')
             ->whereNotNull('college')
             ->where('college', '!=', '')
-            ->distinct()
-            ->orderBy('college')
-            ->pluck('college')
+            ->pluck('college');
+
+        $colleges = $rawColleges
+            ->map(fn ($c) => $this->normalizeCollegeName($c))
+            ->unique()
+            ->sort()
             ->values()
             ->all();
+
+        if ($college === 'All') {
+            return [
+                'colleges'       => $colleges,
+                'programs'       => [],
+                'semesters'      => ['Annual', 'Midyear'],
+                'student_levels' => ['Undergraduate', 'Postgraduate'],
+                'view_types'     => [
+                    ['value' => 'graduate_headcount', 'label' => 'Graduate Headcount'],
+                    ['value' => 'demographic_profile', 'label' => 'Demographic Profile'],
+                ],
+            ];
+        }
 
         $programQuery = DB::table('graduates')
             ->whereNotNull('date_graduated')
             ->whereNotNull('program_name')
-            ->where('program_name', '!=', '');
+            ->where('program_name', '!=', '')
+            ->whereIn('college', $this->getCollegeAliases($college));
 
         if ($studentLevel !== 'All') {
             $programQuery->whereRaw("
                 CASE
                     WHEN LOWER(program_name) LIKE '%master%'
-                      OR LOWER(program_name) LIKE '%doctoral%'
-                      OR LOWER(program_name) LIKE '%phd%'
-                      OR LOWER(program_name) LIKE '%graduate%'
+                    OR LOWER(program_name) LIKE '%doctoral%'
+                    OR LOWER(program_name) LIKE '%phd%'
+                    OR LOWER(program_name) LIKE '%graduate%'
                     THEN 'Postgraduate'
                     ELSE 'Undergraduate'
                 END = ?
@@ -182,26 +199,11 @@ class GraduatesController extends Controller
             ", [$semester]);
         }
 
-        if ($college !== 'All') {
-            $programQuery->where('college', $college);
-        } else {
-            return [
-                'colleges'       => $colleges,
-                'programs'       => [],
-                'semesters'      => ['Annual', 'Midyear'],
-                'student_levels' => ['Undergraduate', 'Postgraduate'],
-                'view_types'     => [
-                    ['value' => 'graduate_headcount', 'label' => 'Graduate Headcount'],
-                    ['value' => 'demographic_profile', 'label' => 'Demographic Profile'],
-                ],
-            ];
-        }
-
         $programs = $programQuery
-            ->select('program_name')
-            ->distinct()
-            ->orderBy('program_name')
             ->pluck('program_name')
+            ->flatMap(fn ($p) => $this->splitProgramNames($p))
+            ->unique()
+            ->sort()
             ->values()
             ->all();
 
@@ -224,13 +226,12 @@ class GraduatesController extends Controller
         string $college,
         string $program
     ): array {
-        // Safety: never allow specific program while college = All
         if ($college === 'All') {
             $program = 'All';
         }
 
         $query       = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program);
-        $allFiltered = (clone $query)->get();
+        $allFiltered = $this->normalizeRows((clone $query)->get());
 
         $totalGraduates = $allFiltered->count();
         $maleCount      = $allFiltered->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
@@ -240,38 +241,38 @@ class GraduatesController extends Controller
         $postgradCount   = $allFiltered->where('derived_student_level', 'Postgraduate')->count();
 
         $undergradMale   = $allFiltered->where('derived_student_level', 'Undergraduate')
-                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+            ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
         $undergradFemale = $allFiltered->where('derived_student_level', 'Undergraduate')
-                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+            ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
         $postgradMale    = $allFiltered->where('derived_student_level', 'Postgraduate')
-                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+            ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
         $postgradFemale  = $allFiltered->where('derived_student_level', 'Postgraduate')
-                                       ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+            ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
 
         $dynamicTitle = $this->makeDynamicTitle($viewType, $studentLevel, $semester, $college, $program);
         $groupField   = $college === 'All' ? 'college' : 'program_name';
 
-        // ── Ranking rows (always ungrouped by program for the ranking bar) ───────
-        $rankingRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
-            ->select($groupField . ' as group_name', DB::raw('COUNT(*) as total'))
-            ->whereNotNull($groupField)
-            ->where($groupField, '!=', '')
-            ->groupBy($groupField)
-            ->orderByDesc('total')
-            ->get();
+        $rankingSource = $this->normalizeRows(
+            $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')->get()
+        );
 
-        $rankingLabels = $rankingRows->pluck('group_name')->all();
-        $rankingValues = $rankingRows->pluck('total')->map(fn($v) => (int) $v)->all();
+        $rankingData   = $this->buildGroupedCountsFromCollection($rankingSource, $groupField);
+        $rankingRows   = collect($rankingData['rows']);
+        $rankingLabels = $rankingData['labels'];
+        $rankingValues = $rankingData['values'];
 
-        // ── Donut rows ────────────────────────────────────────────────────────────
-        $donutRows    = $rankingRows;
-        $donutTotal   = max(1, $donutRows->sum('total'));
-        $donutPercents = $donutRows->map(fn($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
+        $palette = $this->getCollegePalette($college);
+        $programColors = [];
 
-        // ── Major chart — only when a specific program is selected ────────────────
-        // Shows the breakdown of program_major inside the selected program.
-        // If the program has no majors (all NULL / empty), major_chart is null
-        // and the blade will fall back to the normal donut.
+        foreach ($rankingLabels as $i => $programName) {
+            $programColors[$programName] = $palette[$i % count($palette)];
+        }
+
+        $donutRows     = $rankingRows;
+        $donutTotal    = max(1, $donutRows->sum('total'));
+        $donutPercents = $donutRows->map(fn ($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
+
+        // Major chart
         $majorChart = null;
 
         if ($program !== 'All') {
@@ -286,50 +287,68 @@ class GraduatesController extends Controller
             if ($majorRows->isNotEmpty()) {
                 $majorTotal = max(1, $majorRows->sum('total'));
 
+                $majorLabels = $majorRows->pluck('major')->all();
+                $majorColors = [];
+
+                foreach ($majorLabels as $i => $majorName) {
+                    $majorColors[$majorName] = $palette[$i % count($palette)];
+                }
+
                 $majorChart = [
-                    'title'    => $this->makeMajorDonutTitle($studentLevel, $program),
-                    'labels'   => $majorRows->pluck('major')->all(),
-                    'values'   => $majorRows->pluck('total')->map(fn($v) => (int) $v)->all(),
-                    'percents' => $majorRows->map(fn($r) => round(($r->total / $majorTotal) * 100, 1))->values()->all(),
+                    'title'          => $this->makeMajorDonutTitle($studentLevel, $program),
+                    'labels'         => $majorLabels,
+                    'values'         => $majorRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+                    'percents'       => $majorRows->map(fn($r) => round(($r->total / $majorTotal) * 100, 1))->values()->all(),
+                    'program_colors' => $majorColors,
                 ];
             }
         }
 
-        // ── Stacked sex distribution ──────────────────────────────────────────────
-        // When a specific program is selected, group by program_major instead;
-        // fall back to the normal groupField if there are no recorded majors.
-        $sexGroupField  = ($program !== 'All') ? 'program_major' : $groupField;
+        // Stacked sex distribution
+        $sexGroupField    = ($program !== 'All') ? 'program_major' : $groupField;
         $sexProgramFilter = ($program !== 'All') ? $program : 'All';
 
-        $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $sexProgramFilter)
-            ->select(
-                $sexGroupField . ' as group_name',
-                DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
-                DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
-                DB::raw("COUNT(*) as total_count")
-            )
-            ->whereNotNull($sexGroupField)
-            ->where($sexGroupField, '!=', '')
-            ->groupBy($sexGroupField)
-            ->orderBy($sexGroupField)
-            ->get();
+        $sexSource = $this->normalizeRows(
+            $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $sexProgramFilter)->get()
+        );
 
-        // If program is selected but has no majors, fall back to normal program grouping
-        if ($program !== 'All' && $sexRows->isEmpty()) {
-            $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
-                ->select(
-                    $groupField . ' as group_name',
-                    DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
-                    DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
-                    DB::raw("COUNT(*) as total_count")
-                )
-                ->whereNotNull($groupField)
-                ->where($groupField, '!=', '')
-                ->groupBy($groupField)
-                ->orderBy($groupField)
-                ->get();
+        if ($program !== 'All') {
+            $sexRows = $sexSource
+                ->filter(fn ($row) => !empty($row->program_major))
+                ->groupBy('program_major')
+                ->map(function ($items, $groupName) {
+                    return (object) [
+                        'group_name'    => $groupName,
+                        'male_count'    => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
+                        'female_count'  => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
+                        'total_count'   => $items->count(),
+                    ];
+                })
+                ->sortBy('group_name')
+                ->values();
+        } else {
+            $sexRows = collect($this->buildGroupedCountsFromCollection($sexSource, $groupField)['rows'])
+                ->map(function ($row) {
+                    $row->total_count = $row->total;
+                    return $row;
+                })
+                ->sortBy('group_name')
+                ->values();
         }
 
+        if ($program !== 'All' && $sexRows->isEmpty()) {
+            $fallbackSource = $this->normalizeRows(
+                $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')->get()
+            );
+
+            $sexRows = collect($this->buildGroupedCountsFromCollection($fallbackSource, $groupField)['rows'])
+                ->map(function ($row) {
+                    $row->total_count = $row->total;
+                    return $row;
+                })
+                ->sortBy('group_name')
+                ->values();
+        }
         $stackLabels      = [];
         $stackMalePct     = [];
         $stackFemalePct   = [];
@@ -344,7 +363,7 @@ class GraduatesController extends Controller
             $stackLabels[]      = $row->group_name;
             $stackMaleCount[]   = $male;
             $stackFemaleCount[] = $female;
-            $stackMalePct[]     = round(($male   / $total) * 100, 1);
+            $stackMalePct[]     = round(($male / $total) * 100, 1);
             $stackFemalePct[]   = round(($female / $total) * 100, 1);
         }
 
@@ -355,39 +374,53 @@ class GraduatesController extends Controller
 
             'value_boxes' => $viewType === 'graduate_headcount'
                 ? [
-                    ['title' => 'Total University Graduates',        'value' => $totalGraduates],
-                    ['title' => 'Undergraduate Level Graduates',     'value' => $undergradCount],
-                    ['title' => 'Postgraduate Level Graduates',      'value' => $postgradCount],
+                    ['title' => 'Total University Graduates',    'value' => $totalGraduates],
+                    ['title' => 'Undergraduate Level Graduates', 'value' => $undergradCount],
+                    ['title' => 'Postgraduate Level Graduates',  'value' => $postgradCount],
                 ]
                 : [
                     ['title' => 'Total University Graduates',    'value' => $totalGraduates],
                     ['title' => 'Undergraduate Level Graduates', 'value' => ['male' => $undergradMale, 'female' => $undergradFemale]],
-                    ['title' => 'Postgraduate Level Graduates',  'value' => ['male' => $postgradMale,  'female' => $postgradFemale]],
+                    ['title' => 'Postgraduate Level Graduates',  'value' => ['male' => $postgradMale, 'female' => $postgradFemale]],
                 ],
 
-            'pie_chart' => $this->makePieChart($studentLevel, $maleCount, $femaleCount, $undergradMale, $undergradFemale, $postgradMale, $postgradFemale),
+            'pie_chart' => $this->makePieChart(
+                $studentLevel,
+                $maleCount,
+                $femaleCount,
+                $undergradMale,
+                $undergradFemale,
+                $postgradMale,
+                $postgradFemale
+            ),
 
             'donut_chart' => [
-                'title'    => $this->makeDonutTitle($studentLevel, $college, $program),
-                'labels'   => $donutRows->pluck('group_name')->all(),
-                'values'   => $donutRows->pluck('total')->map(fn($v) => (int) $v)->all(),
-                'percents' => $donutPercents,
+                'title'          => $this->makeDonutTitle($studentLevel, $college, $program),
+                'labels'         => $donutRows->pluck('group_name')->all(),
+                'values'         => $donutRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+                'percents'       => $donutPercents,
+                'program_colors' => $programColors,
             ],
 
-            // null when no program selected, or when the program has no majors in DB
             'major_chart' => $majorChart,
 
             'ranking_chart' => [
-                'title'        => 'Ranking of Graduates Count by ' . ($college === 'All' ? 'College' : 'Program'),
-                'labels'       => $rankingLabels,
-                'values'       => $rankingValues,
-                'highlight'    => $program !== 'All' ? $program : null,
-                'y_axis_label' => $college === 'All' ? 'Colleges' : 'Programs',
-                'x_axis_label' => 'Number of Graduates',
+                'title'          => 'Ranking of Graduates Count by ' . ($college === 'All' ? 'College' : 'Program'),
+                'labels'         => $rankingLabels,
+                'values'         => $rankingValues,
+                'highlight'      => $program !== 'All' ? $program : null,
+                'y_axis_label'   => $college === 'All' ? 'Colleges' : 'Programs',
+                'x_axis_label'   => 'Number of Graduates',
+                'program_colors' => $programColors,
             ],
 
             'stacked_chart' => [
-                'title'        => $this->makeStackedTitle($studentLevel, $college, $program, !empty($stackLabels) && $program !== 'All' && $sexGroupField === 'program_major'),
+                'title'        => $this->makeStackedTitle(
+                    $studentLevel,
+                    $college,
+                    $program,
+                    !empty($stackLabels) && $program !== 'All' && $sexGroupField === 'program_major'
+                ),
                 'labels'       => $stackLabels,
                 'male_pct'     => $stackMalePct,
                 'female_pct'   => $stackFemalePct,
@@ -399,6 +432,197 @@ class GraduatesController extends Controller
             ],
         ];
     }
+
+    // private function buildDashboardData(
+    //     string $viewType,
+    //     string $studentLevel,
+    //     string $semester,
+    //     string $college,
+    //     string $program
+    // ): array {
+    //     // Safety: never allow specific program while college = All
+    //     if ($college === 'All') {
+    //         $program = 'All';
+    //     }
+
+    //     $query       = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program);
+    //     $allFiltered = (clone $query)->get();
+
+    //     $totalGraduates = $allFiltered->count();
+    //     $maleCount      = $allFiltered->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+    //     $femaleCount    = $allFiltered->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+
+    //     $undergradCount  = $allFiltered->where('derived_student_level', 'Undergraduate')->count();
+    //     $postgradCount   = $allFiltered->where('derived_student_level', 'Postgraduate')->count();
+
+    //     $undergradMale   = $allFiltered->where('derived_student_level', 'Undergraduate')
+    //                                    ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+    //     $undergradFemale = $allFiltered->where('derived_student_level', 'Undergraduate')
+    //                                    ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+    //     $postgradMale    = $allFiltered->where('derived_student_level', 'Postgraduate')
+    //                                    ->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count();
+    //     $postgradFemale  = $allFiltered->where('derived_student_level', 'Postgraduate')
+    //                                    ->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count();
+
+    //     $dynamicTitle = $this->makeDynamicTitle($viewType, $studentLevel, $semester, $college, $program);
+    //     $groupField   = $college === 'All' ? 'college' : 'program_name';
+
+    //     // ── Ranking rows (always ungrouped by program for the ranking bar) ───────
+    //     $rankingRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
+    //         ->select($groupField . ' as group_name', DB::raw('COUNT(*) as total'))
+    //         ->whereNotNull($groupField)
+    //         ->where($groupField, '!=', '')
+    //         ->groupBy($groupField)
+    //         ->orderByDesc('total')
+    //         ->get();
+
+    //     $rankingLabels = $rankingRows->pluck('group_name')->all();
+    //     $rankingValues = $rankingRows->pluck('total')->map(fn($v) => (int) $v)->all();
+
+    //     $palette = $this->getCollegePalette($college);
+    //     $programColors = [];
+
+    //     foreach ($rankingLabels as $i => $programName) {
+    //         $programColors[$programName] = $palette[$i % count($palette)];
+    //     }
+
+    //     // ── Donut rows ────────────────────────────────────────────────────────────
+    //     $donutRows    = $rankingRows;
+    //     $donutTotal   = max(1, $donutRows->sum('total'));
+    //     $donutPercents = $donutRows->map(fn($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
+
+    //     // ── Major chart — only when a specific program is selected ────────────────
+    //     // Shows the breakdown of program_major inside the selected program.
+    //     // If the program has no majors (all NULL / empty), major_chart is null
+    //     // and the blade will fall back to the normal donut.
+    //     $majorChart = null;
+
+    //     if ($program !== 'All') {
+    //         $majorRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program)
+    //             ->select('program_major as major', DB::raw('COUNT(*) as total'))
+    //             ->whereNotNull('program_major')
+    //             ->where('program_major', '!=', '')
+    //             ->groupBy('program_major')
+    //             ->orderByDesc('total')
+    //             ->get();
+
+    //         if ($majorRows->isNotEmpty()) {
+    //             $majorTotal = max(1, $majorRows->sum('total'));
+
+    //             $majorChart = [
+    //                 'title'    => $this->makeMajorDonutTitle($studentLevel, $program),
+    //                 'labels'   => $majorRows->pluck('major')->all(),
+    //                 'values'   => $majorRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+    //                 'percents' => $majorRows->map(fn($r) => round(($r->total / $majorTotal) * 100, 1))->values()->all(),
+    //             ];
+    //         }
+    //     }
+
+    //     // ── Stacked sex distribution ──────────────────────────────────────────────
+    //     // When a specific program is selected, group by program_major instead;
+    //     // fall back to the normal groupField if there are no recorded majors.
+    //     $sexGroupField  = ($program !== 'All') ? 'program_major' : $groupField;
+    //     $sexProgramFilter = ($program !== 'All') ? $program : 'All';
+
+    //     $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $sexProgramFilter)
+    //         ->select(
+    //             $sexGroupField . ' as group_name',
+    //             DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
+    //             DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
+    //             DB::raw("COUNT(*) as total_count")
+    //         )
+    //         ->whereNotNull($sexGroupField)
+    //         ->where($sexGroupField, '!=', '')
+    //         ->groupBy($sexGroupField)
+    //         ->orderBy($sexGroupField)
+    //         ->get();
+
+    //     // If program is selected but has no majors, fall back to normal program grouping
+    //     if ($program !== 'All' && $sexRows->isEmpty()) {
+    //         $sexRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, 'All')
+    //             ->select(
+    //                 $groupField . ' as group_name',
+    //                 DB::raw("SUM(CASE WHEN LOWER(gender) IN ('male','m') THEN 1 ELSE 0 END) as male_count"),
+    //                 DB::raw("SUM(CASE WHEN LOWER(gender) IN ('female','f') THEN 1 ELSE 0 END) as female_count"),
+    //                 DB::raw("COUNT(*) as total_count")
+    //             )
+    //             ->whereNotNull($groupField)
+    //             ->where($groupField, '!=', '')
+    //             ->groupBy($groupField)
+    //             ->orderBy($groupField)
+    //             ->get();
+    //     }
+
+    //     $stackLabels      = [];
+    //     $stackMalePct     = [];
+    //     $stackFemalePct   = [];
+    //     $stackMaleCount   = [];
+    //     $stackFemaleCount = [];
+
+    //     foreach ($sexRows as $row) {
+    //         $total    = max(1, (int) $row->total_count);
+    //         $male     = (int) $row->male_count;
+    //         $female   = (int) $row->female_count;
+
+    //         $stackLabels[]      = $row->group_name;
+    //         $stackMaleCount[]   = $male;
+    //         $stackFemaleCount[] = $female;
+    //         $stackMalePct[]     = round(($male   / $total) * 100, 1);
+    //         $stackFemalePct[]   = round(($female / $total) * 100, 1);
+    //     }
+
+    //     return [
+    //         'page_title_text'    => 'Graduates Overview',
+    //         'dynamic_title'      => $dynamicTitle,
+    //         'selected_view_type' => $viewType,
+
+    //         'value_boxes' => $viewType === 'graduate_headcount'
+    //             ? [
+    //                 ['title' => 'Total University Graduates',        'value' => $totalGraduates],
+    //                 ['title' => 'Undergraduate Level Graduates',     'value' => $undergradCount],
+    //                 ['title' => 'Postgraduate Level Graduates',      'value' => $postgradCount],
+    //             ]
+    //             : [
+    //                 ['title' => 'Total University Graduates',    'value' => $totalGraduates],
+    //                 ['title' => 'Undergraduate Level Graduates', 'value' => ['male' => $undergradMale, 'female' => $undergradFemale]],
+    //                 ['title' => 'Postgraduate Level Graduates',  'value' => ['male' => $postgradMale,  'female' => $postgradFemale]],
+    //             ],
+
+    //         'pie_chart' => $this->makePieChart($studentLevel, $maleCount, $femaleCount, $undergradMale, $undergradFemale, $postgradMale, $postgradFemale),
+
+    //         'donut_chart' => [
+    //             'title'    => $this->makeDonutTitle($studentLevel, $college, $program),
+    //             'labels'   => $donutRows->pluck('group_name')->all(),
+    //             'values'   => $donutRows->pluck('total')->map(fn($v) => (int) $v)->all(),
+    //             'percents' => $donutPercents,
+    //         ],
+
+    //         // null when no program selected, or when the program has no majors in DB
+    //         'major_chart' => $majorChart,
+
+    //         'ranking_chart' => [
+    //             'title'        => 'Ranking of Graduates Count by ' . ($college === 'All' ? 'College' : 'Program'),
+    //             'labels'       => $rankingLabels,
+    //             'values'       => $rankingValues,
+    //             'highlight'    => $program !== 'All' ? $program : null,
+    //             'y_axis_label' => $college === 'All' ? 'Colleges' : 'Programs',
+    //             'x_axis_label' => 'Number of Graduates',
+    //             'program_colors' => $programColors,
+    //         ],
+
+    //         'stacked_chart' => [
+    //             'title'        => $this->makeStackedTitle($studentLevel, $college, $program, !empty($stackLabels) && $program !== 'All' && $sexGroupField === 'program_major'),
+    //             'labels'       => $stackLabels,
+    //             'male_pct'     => $stackMalePct,
+    //             'female_pct'   => $stackFemalePct,
+    //             'male_count'   => $stackMaleCount,
+    //             'female_count' => $stackFemaleCount,
+    //             'y_axis_label' => $college === 'All'
+    //                 ? 'College'
+    //                 : ($program !== 'All' && !empty($stackLabels) ? 'Major' : 'Program'),
+    //         ],
+    //     ];
+    // }
 
     private function makeDynamicTitle(
         string $viewType,
@@ -518,5 +742,258 @@ class GraduatesController extends Controller
                     'values' => [$maleCount, $femaleCount],
                 ];
         }
+    }
+
+    private function getCollegePalette(string $college): array
+    {
+        $palettes = [
+            'College of Agriculture (CAG)' => [
+                '#016531',
+                '#0B7A3A',
+                '#169042',
+                '#2AA857',
+                '#4CC276',
+                '#7DDBA3',
+                '#A8E8C3',
+                '#CFF4E0',
+            ],
+
+            'College of Arts and Social Sciences (CASS)' => [
+                '#6D430F',
+                '#9E6E28',
+                '#CF9D43',
+                '#FFD05F',
+                '#9E6E28',
+                '#CF9D43'
+            ],
+
+            'College of Business and Accountancy (CBA)' => [
+                '#084E7C',
+                '#0A6DAF',
+                '#0097D1',
+                '#00B3E6',
+                '#00C2EC',
+                '#33D6F3',
+                '#66E6FA'
+            ],
+
+            'College of Education (CED)' => [
+                '#B29A00',
+                '#CBB223',
+                '#E5CB3A',
+                '#FFE450',
+                '#FFEB73',
+                '#FFF199',
+            ],
+
+            'College of Engineering (CEN)' => [
+                '#86090A',
+                '#B04B33',
+                '#D87F62',
+                '#FFB495',
+                '#74C8F7'
+            ],
+
+            'College of Fisheries (COF)' => [
+                '#B82C2C',
+                '#1C82C7',
+                '#2E97DF',
+                '#4DB1F0',
+                '#74C8F7'
+            ],
+
+            'College of Human Sciences and Industry (CHSI)' => [
+                '#A70062',
+                '#C74993',
+                '#E479C5',
+                '#FFA8F7',
+                '#FFC4FB',
+            ],
+
+            'College of Science (COS)' => [
+                '#008080',
+                '#00A9A9',
+                '#00D3D3',
+                '#39EDFF',
+                '#00FFFF',
+                '#66FFFF',
+                '#99FFFF'
+            ],
+
+            'College of Veterinary Science and Medicine (CVSM)' => [
+                '#797979',
+                '#1C82C7',
+                '#2E97DF',
+                '#4DB1F0',
+                '#74C8F7'
+            ],
+
+            'Graduate School - Masters' => [
+                '#0A6DAF',
+                '#1C82C7',
+                '#2E97DF',
+                '#4DB1F0',
+                '#74C8F7'
+            ],
+
+            'DOT-UNI' => [
+                '#0A6DAF',
+                '#1C82C7',
+                '#2E97DF',
+                '#4DB1F0',
+                '#74C8F7'
+            ],
+
+            'Graduate School - Doctoral' => [
+                '#0A6DAF',
+                '#1C82C7',
+                '#2E97DF',
+                '#4DB1F0',
+                '#74C8F7'
+            ],
+        ];
+
+        return $palettes[$college] ?? [
+            '#016531',
+            '#86090A',
+            '#B29A00',
+            '#6D430F',
+            '#0A6DAF'
+        ];
+    }
+
+    private function normalizeCollegeName(?string $college): ?string
+    {
+        if ($college === null) {
+            return null;
+        }
+
+        $college = trim(preg_replace('/\s+/', ' ', $college));
+        $key = strtolower($college);
+
+        $map = [
+            'college of business administration (cba)' => 'College of Business and Accountancy (CBA)',
+
+            'college of human sciences and industry (chsi)' => 'College of Home Sciences and Industry (CHSI)',
+        ];
+
+        return $map[$key] ?? $college;
+    }
+
+    private function getCollegeAliases(string $college): array
+    {
+        $normalized = $this->normalizeCollegeName($college);
+
+        $aliases = [
+            'College of Business and Accountancy (CBA)' => [
+                'College of BUsiness And Accountancy',
+                'College of Business And Accountancy',
+                'College of Business Administration',
+                'College of Business Admininstration',
+                'College of Business Administration (CBA)',
+            ],
+            'College of Human Sciences and Industry (CHSI)' => [
+                'College of Home Science and Industry',
+                'College of Human Science and Industry',
+                'College of Human Sciences and Industry',
+                'College of Human Sciences and Industry (CHSI)',
+            ],
+        ];
+
+        return $aliases[$normalized] ?? [$college];
+    }
+
+    private function splitProgramNames(?string $programName): array
+    {
+        if ($programName === null) {
+            return [];
+        }
+
+        $programName = trim(preg_replace('/\s+/', ' ', $programName));
+
+        if ($programName === '') {
+            return [];
+        }
+
+        if (strcasecmp($programName, 'BS Agriculture/Certificate in Agricultural Science') === 0) {
+            return [
+                'BS Agriculture',
+                'Certificate in Agricultural Science',
+            ];
+        }
+
+        return [$programName];
+    }
+
+    private function getProgramAliases(string $program): array
+    {
+        $program = trim(preg_replace('/\s+/', ' ', $program));
+
+        $aliases = [
+            'BS Agriculture' => [
+                'BS Agriculture',
+                'BS Agriculture/Certificate in Agricultural Science',
+            ],
+            'Certificate in Agricultural Science' => [
+                'Certificate in Agricultural Science',
+                'BS Agriculture/Certificate in Agricultural Science',
+            ],
+        ];
+
+        return $aliases[$program] ?? [$program];
+    }
+
+    private function normalizeRows($rows)
+    {
+        return collect($rows)->map(function ($row) {
+            $row->college = $this->normalizeCollegeName($row->college);
+            $row->program_name = trim(preg_replace('/\s+/', ' ', (string) $row->program_name));
+            $row->program_major = trim(preg_replace('/\s+/', ' ', (string) $row->program_major));
+            return $row;
+        });
+    }
+
+    private function buildGroupedCountsFromCollection($rows, string $groupBy): array
+    {
+        $expanded = collect();
+
+        foreach ($rows as $row) {
+            if ($groupBy === 'program_name') {
+                foreach ($this->splitProgramNames($row->program_name) as $program) {
+                    $expanded->push((object) [
+                        'group_name' => $program,
+                        'gender' => $row->gender,
+                    ]);
+                }
+            } else {
+                $value = $row->{$groupBy} ?? null;
+
+                if ($value !== null && $value !== '') {
+                    $expanded->push((object) [
+                        'group_name' => $value,
+                        'gender' => $row->gender,
+                    ]);
+                }
+            }
+        }
+
+        $grouped = $expanded
+            ->groupBy('group_name')
+            ->map(function ($items, $groupName) {
+                return (object) [
+                    'group_name' => $groupName,
+                    'total' => $items->count(),
+                    'male_count' => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
+                    'female_count' => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
+                ];
+            })
+            ->sortByDesc('total')
+            ->values();
+
+        return [
+            'labels' => $grouped->pluck('group_name')->all(),
+            'values' => $grouped->pluck('total')->map(fn ($v) => (int) $v)->all(),
+            'rows'   => $grouped,
+        ];
     }
 }
