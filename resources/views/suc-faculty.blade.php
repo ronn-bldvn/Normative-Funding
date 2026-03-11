@@ -106,7 +106,7 @@
                             class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
                             <div
                                 class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-money-bill-wave text-green-600 text-2xl"></i>
+                                <i class="fa-solid fa-users text-green-600 text-2xl"></i>
                             </div>
                             <div class="mt-12 text-right">
                                 <p class="font-[inter] text-[32px] md:text-[44px] font-extrabold leading-tight">{{ $total_faculty }}</p>
@@ -117,7 +117,7 @@
                         <div class="relative bg-white rounded-2xl p-6 shadow-md">
                             <div
                                 class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-graduation-cap text-white text-xl"></i>
+                                <i class="fa-solid fa-user-graduate text-white text-xl"></i>
                             </div>
                             <div class="mt-12 text-right">
                                 <p class="font-[inter] text-[32px] md:text-[44px] font-bold text-gray-900">
@@ -129,7 +129,7 @@
                         <div class="relative bg-white rounded-2xl p-6 shadow-md">
                             <div
                                 class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-building text-white text-xl"></i>
+                                <i class="fa-solid fa-school text-white text-xl"></i>
                             </div>
                             <div class="mt-12 text-right">
                                 <p class="font-[inter] text-[32px] md:text-[44px] font-bold text-gray-900">

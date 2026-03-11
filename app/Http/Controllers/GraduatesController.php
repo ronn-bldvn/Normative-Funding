@@ -285,13 +285,21 @@ class GraduatesController extends Controller
         $majorChart = null;
 
         if ($program !== 'All') {
-            $majorRows = $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program)
-                ->select('program_major as major', DB::raw('COUNT(*) as total'))
-                ->whereNotNull('program_major')
-                ->where('program_major', '!=', '')
+            $majorSource = $this->normalizeRows(
+                $this->applyFilters($this->getBaseQuery(), $studentLevel, $semester, $college, $program)->get()
+            );
+
+            $majorRows = $majorSource
+                ->filter(fn($row) => !empty($row->program_major))
                 ->groupBy('program_major')
-                ->orderByDesc('total')
-                ->get();
+                ->map(function ($items, $majorName) {
+                    return (object) [
+                        'major' => $majorName,
+                        'total' => $items->count(),
+                    ];
+                })
+                ->sortByDesc('total')
+                ->values();
 
             if ($majorRows->isNotEmpty()) {
                 $majorTotal = max(1, $majorRows->sum('total'));
@@ -938,7 +946,8 @@ class GraduatesController extends Controller
         return collect($rows)->map(function ($row) {
             $row->college = $this->normalizeCollegeName($row->college);
             $row->program_name = $this->normalizeProgramName($row->program_name);
-            $row->program_major = trim(preg_replace('/\s+/', ' ', (string) $row->program_major));
+            $row->program_major = $this->normalizeProgramMajor($row->program_major);
+
             return $row;
         });
     }
@@ -995,6 +1004,24 @@ class GraduatesController extends Controller
 
         $programName = trim(preg_replace('/\s+/', ' ', $programName));
 
+        if ($programName === '') {
+            return null;
+        }
+
+        // Remove trailing suffixes like:
+        // (DOT-Uni), (DOT UNI), (GS-Masters), (GS-Doctoral)
+        $programName = preg_replace(
+            '/\s*\((DOT-Uni|DOT UNI|GS-Masters|GS-Doctoral)\)\s*$/i',
+            '',
+            $programName
+        );
+
+        $programName = trim(preg_replace('/\s+/', ' ', $programName));
+
+        if ($programName === '') {
+            return null;
+        }
+
         if ($this->isCombinedAgriCertificateProgram($programName)) {
             return 'BS Agriculture / Certificate in Agricultural Science';
         }
@@ -1018,6 +1045,22 @@ class GraduatesController extends Controller
 
             'bachelor of science in accountancy' => 'BS Accountancy',
             'bs accountancy' => 'BS Accountancy',
+
+            'master of science in education' => 'Master of Science in Education',
+            'ms education' => 'Master of Science in Education',
+
+            'doctor of philosophy in development education' => 'Doctor of Philosophy in Development Education',
+            'phd development education' => 'Doctor of Philosophy in Development Education',
+
+            'master of business administration' => 'Master of Business Administration',
+            'mba' => 'Master of Business Administration',
+
+            'master in environmental management' => 'Master in Environmental Management',
+
+            'master of science in rural development' => 'Master of Science in Rural Development',
+            'ms rural development' => 'Master of Science in Rural Development',
+
+            'certificate in teaching' => 'Certificate in Teaching',
         ];
 
         return $map[$key] ?? $programName;
@@ -1050,30 +1093,105 @@ class GraduatesController extends Controller
                 'BS Agriculture/Certificate in Agricultural Science',
                 'Bachelor of Science in Agriculture / Certificate in Agricultural Science',
             ],
+
             'Certificate in Agricultural Science' => [
                 'Certificate in Agricultural Science',
                 'BS Agriculture / Certificate in Agricultural Science',
                 'BS Agriculture/Certificate in Agricultural Science',
                 'Bachelor of Science in Agriculture / Certificate in Agricultural Science',
             ],
+
             'BS Business Administration' => [
                 'BS Business Administration',
                 'Bachelor of Science in Business Administration',
             ],
+
             'BS Management Accounting' => [
                 'BS Management Accounting',
                 'Bachelor of Science in Management Accounting',
             ],
+
             'BS Entrepreneurship' => [
                 'BS Entrepreneurship',
                 'Bachelor of Science in Entrepreneurship',
             ],
+
             'BS Accountancy' => [
                 'BS Accountancy',
                 'Bachelor of Science in Accountancy',
             ],
+
+            'Master of Science in Education' => [
+                'Master of Science in Education',
+                'Master of Science in Education (DOT-Uni)',
+                'Master of Science in Education (DOT UNI)',
+                'MS Education',
+            ],
+
+            'Doctor of Philosophy in Development Education' => [
+                'Doctor of Philosophy in Development Education',
+                'Doctor of Philosophy in Development Education (DOT-Uni)',
+                'Doctor of Philosophy in Development Education (DOT UNI)',
+                'PhD Development Education',
+            ],
+
+            'Master of Business Administration' => [
+                'Master of Business Administration',
+                'Master of Business Administration (DOT-Uni)',
+                'Master of Business Administration (DOT UNI)',
+                'MBA',
+            ],
+
+            'Master in Environmental Management' => [
+                'Master in Environmental Management',
+                'Master in Environmental Management (DOT-Uni)',
+                'Master in Environmental Management (DOT UNI)',
+            ],
+
+            'Master of Science in Rural Development' => [
+                'Master of Science in Rural Development',
+                'Master of Science in Rural Development (DOT-Uni)',
+                'Master of Science in Rural Development (DOT UNI)',
+                'MS Rural Development',
+            ],
+
+            'Certificate in Teaching' => [
+                'Certificate in Teaching',
+                'Certificate in Teaching (DOT-Uni)',
+                'Certificate in Teaching (DOT UNI)',
+            ],
+
+            'Systems Development' => [
+                'Systems Development',
+                'System Development'
+            ]
         ];
 
         return $aliases[$program] ?? [$program];
+    }
+
+    private function normalizeProgramMajor(?string $major): ?string
+    {
+        if ($major === null) {
+            return null;
+        }
+
+        $major = trim(preg_replace('/\s+/', ' ', $major));
+
+        if ($major === '') {
+            return null;
+        }
+
+        $key = strtolower($major);
+
+        $map = [
+            'system development' => 'Systems Development',
+            'systems development' => 'Systems Development',
+
+            'network administration' => 'Network Administration',
+            'networking administration' => 'Network Administration',
+        ];
+
+        return $map[$key] ?? $major;
     }
 }
