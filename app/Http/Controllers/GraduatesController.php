@@ -31,6 +31,15 @@ class GraduatesController extends Controller
 
         $payload = $this->buildDashboardData($viewType, $studentLevel, $semester, $college, $program);
 
+        // dd(
+        //     DB::table('graduates')
+        //         ->where('college', 'like', '%Agriculture%')
+        //         ->where('program_name', 'like', '%Agriculture%')
+        //         ->pluck('program_name')
+        //         ->unique()
+        //         ->values()
+        //         ->all()
+        // );
         return view('graduates', array_merge($payload, [
             'active_page'      => 'graduates',
             'view_type'        => $viewType,
@@ -152,7 +161,7 @@ class GraduatesController extends Controller
             ->pluck('college');
 
         $colleges = $rawColleges
-            ->map(fn ($c) => $this->normalizeCollegeName($c))
+            ->map(fn($c) => $this->normalizeCollegeName($c))
             ->unique()
             ->sort()
             ->values()
@@ -201,7 +210,7 @@ class GraduatesController extends Controller
 
         $programs = $programQuery
             ->pluck('program_name')
-            ->flatMap(fn ($p) => $this->splitProgramNames($p))
+            ->flatMap(fn($p) => $this->splitProgramNames($p))
             ->unique()
             ->sort()
             ->values()
@@ -270,7 +279,7 @@ class GraduatesController extends Controller
 
         $donutRows     = $rankingRows;
         $donutTotal    = max(1, $donutRows->sum('total'));
-        $donutPercents = $donutRows->map(fn ($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
+        $donutPercents = $donutRows->map(fn($r) => round(($r->total / $donutTotal) * 100, 1))->values()->all();
 
         // Major chart
         $majorChart = null;
@@ -314,13 +323,13 @@ class GraduatesController extends Controller
 
         if ($program !== 'All') {
             $sexRows = $sexSource
-                ->filter(fn ($row) => !empty($row->program_major))
+                ->filter(fn($row) => !empty($row->program_major))
                 ->groupBy('program_major')
                 ->map(function ($items, $groupName) {
                     return (object) [
                         'group_name'    => $groupName,
-                        'male_count'    => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
-                        'female_count'  => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
+                        'male_count'    => $items->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
+                        'female_count'  => $items->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
                         'total_count'   => $items->count(),
                     ];
                 })
@@ -802,7 +811,7 @@ class GraduatesController extends Controller
                 '#74C8F7'
             ],
 
-            'College of Human Sciences and Industry (CHSI)' => [
+            'College of Home Sciences and Industry (CHSI)' => [
                 '#A70062',
                 '#C74993',
                 '#E479C5',
@@ -892,7 +901,7 @@ class GraduatesController extends Controller
                 'College of Business Admininstration',
                 'College of Business Administration (CBA)',
             ],
-            'College of Human Sciences and Industry (CHSI)' => [
+            'College of Home Sciences and Industry (CHSI)' => [
                 'College of Home Science and Industry',
                 'College of Human Science and Industry',
                 'College of Human Sciences and Industry',
@@ -915,39 +924,20 @@ class GraduatesController extends Controller
             return [];
         }
 
-        if (strcasecmp($programName, 'BS Agriculture/Certificate in Agricultural Science') === 0) {
+        if ($this->isCombinedAgriCertificateProgram($programName)) {
             return [
                 'BS Agriculture',
                 'Certificate in Agricultural Science',
             ];
         }
 
-        return [$programName];
+        return [$this->normalizeProgramName($programName)];
     }
-
-    private function getProgramAliases(string $program): array
-    {
-        $program = trim(preg_replace('/\s+/', ' ', $program));
-
-        $aliases = [
-            'BS Agriculture' => [
-                'BS Agriculture',
-                'BS Agriculture/Certificate in Agricultural Science',
-            ],
-            'Certificate in Agricultural Science' => [
-                'Certificate in Agricultural Science',
-                'BS Agriculture/Certificate in Agricultural Science',
-            ],
-        ];
-
-        return $aliases[$program] ?? [$program];
-    }
-
     private function normalizeRows($rows)
     {
         return collect($rows)->map(function ($row) {
             $row->college = $this->normalizeCollegeName($row->college);
-            $row->program_name = trim(preg_replace('/\s+/', ' ', (string) $row->program_name));
+            $row->program_name = $this->normalizeProgramName($row->program_name);
             $row->program_major = trim(preg_replace('/\s+/', ' ', (string) $row->program_major));
             return $row;
         });
@@ -983,8 +973,8 @@ class GraduatesController extends Controller
                 return (object) [
                     'group_name' => $groupName,
                     'total' => $items->count(),
-                    'male_count' => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
-                    'female_count' => $items->filter(fn ($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
+                    'male_count' => $items->filter(fn($r) => in_array(strtolower($r->gender), ['male', 'm']))->count(),
+                    'female_count' => $items->filter(fn($r) => in_array(strtolower($r->gender), ['female', 'f']))->count(),
                 ];
             })
             ->sortByDesc('total')
@@ -992,8 +982,98 @@ class GraduatesController extends Controller
 
         return [
             'labels' => $grouped->pluck('group_name')->all(),
-            'values' => $grouped->pluck('total')->map(fn ($v) => (int) $v)->all(),
+            'values' => $grouped->pluck('total')->map(fn($v) => (int) $v)->all(),
             'rows'   => $grouped,
         ];
+    }
+
+    private function normalizeProgramName(?string $programName): ?string
+    {
+        if ($programName === null) {
+            return null;
+        }
+
+        $programName = trim(preg_replace('/\s+/', ' ', $programName));
+
+        if ($this->isCombinedAgriCertificateProgram($programName)) {
+            return 'BS Agriculture / Certificate in Agricultural Science';
+        }
+
+        $key = strtolower($programName);
+
+        $map = [
+            'bachelor of science in agriculture' => 'BS Agriculture',
+            'bs agriculture' => 'BS Agriculture',
+
+            'certificate in agricultural science' => 'Certificate in Agricultural Science',
+
+            'bachelor of science in business administration' => 'BS Business Administration',
+            'bs business administration' => 'BS Business Administration',
+
+            'bachelor of science in management accounting' => 'BS Management Accounting',
+            'bs management accounting' => 'BS Management Accounting',
+
+            'bachelor of science in entrepreneurship' => 'BS Entrepreneurship',
+            'bs entrepreneurship' => 'BS Entrepreneurship',
+
+            'bachelor of science in accountancy' => 'BS Accountancy',
+            'bs accountancy' => 'BS Accountancy',
+        ];
+
+        return $map[$key] ?? $programName;
+    }
+    private function isCombinedAgriCertificateProgram(?string $programName): bool
+    {
+        if ($programName === null) {
+            return false;
+        }
+
+        $normalized = strtolower(trim(preg_replace('/\s+/', ' ', $programName)));
+
+        $hasAgriculture =
+            str_contains($normalized, 'bachelor of science in agriculture') ||
+            str_contains($normalized, 'bs agriculture');
+
+        $hasCertificate = str_contains($normalized, 'certificate in agricultural science');
+
+        return $hasAgriculture && $hasCertificate;
+    }
+    private function getProgramAliases(string $program): array
+    {
+        $program = $this->normalizeProgramName($program);
+
+        $aliases = [
+            'BS Agriculture' => [
+                'BS Agriculture',
+                'Bachelor of Science in Agriculture',
+                'BS Agriculture / Certificate in Agricultural Science',
+                'BS Agriculture/Certificate in Agricultural Science',
+                'Bachelor of Science in Agriculture / Certificate in Agricultural Science',
+            ],
+            'Certificate in Agricultural Science' => [
+                'Certificate in Agricultural Science',
+                'BS Agriculture / Certificate in Agricultural Science',
+                'BS Agriculture/Certificate in Agricultural Science',
+                'Bachelor of Science in Agriculture / Certificate in Agricultural Science',
+            ],
+            'BS Business Administration' => [
+                'BS Business Administration',
+                'Bachelor of Science in Business Administration',
+            ],
+            'BS Management Accounting' => [
+                'BS Management Accounting',
+                'Bachelor of Science in Management Accounting',
+            ],
+            'BS Entrepreneurship' => [
+                'BS Entrepreneurship',
+                'Bachelor of Science in Entrepreneurship',
+            ],
+            'BS Accountancy' => [
+                'BS Accountancy',
+                'Bachelor of Science in Accountancy',
+            ],
+        ];
+
+        return $aliases[$program] ?? [$program];
     }
 }

@@ -346,9 +346,11 @@
             const shortLabels = data.labels.map(abbreviateCollege);
 
             const programColors = data.program_colors || {};
+            const isCollegeSelected = initialData.selected_college && initialData.selected_college !== 'All';
 
             const colors = data.labels.map((label, i) => {
-                return programColors[label] || PALETTE[i % PALETTE.length];
+                if (isCollegeSelected) return programColors[label] || PALETTE[i % PALETTE.length];
+                return PALETTE[i % PALETTE.length]; // all-colleges view always uses PALETTE
             });
 
             console.log(data.program_colors)
@@ -390,6 +392,7 @@
                 data.title || 'Ranking of Graduates Count by College/Department';
 
             const programColors = data.program_colors || {};
+            const isCollegeSelected = initialData.selected_college && initialData.selected_college !== 'All';
 
             const rows = data.labels
                 .map((full, i) => ({
@@ -402,26 +405,25 @@
 
             const colors = rows.map((row, i) => {
                 if (row.highlight) return '#F59E0B';
-                return programColors[row.full] || PALETTE[i % PALETTE.length];
+                if (isCollegeSelected) return programColors[row.full] || PALETTE[i % PALETTE.length];
+                return PALETTE[(rows.length - 1 - i) % PALETTE.length]; // ← reversed
             });
 
             Plotly.newPlot('rankingBar', [{
-                type: 'bar',
-                orientation: 'h',
-                x: rows.map(d => d.val),
-                y: rows.map(d => d.short),
-                customdata: rows.map(d => d.full),
-                text: rows.map(d => d.val),
-                textposition: 'outside',
-                cliponaxis: false,
-                marker: {
-                    color: colors,
-                    line: { color: 'transparent' }
-                },
-                hovertemplate:
-                    '<b>%{customdata}</b><br>' +
-                    'Graduates: %{x}<extra></extra>',
-            }], {
+                    type: 'bar',
+                    orientation: 'h',
+                    x: rows.map(d => d.val),
+                    y: rows.map(d => d.short),
+                    hovertext: rows.map(d => `<b>${d.full}</b><br>Graduates: ${d.val}`),
+                    hovertemplate: '%{hovertext}<extra></extra>',
+                    text: rows.map(d => d.val),
+                    textposition: 'outside',
+                    cliponaxis: false,
+                    marker: {
+                        color: colors,
+                        line: { color: 'transparent' }
+                    },
+                }],{
                 ...BASE_LAYOUT,
                 margin: { t: 10, b: 50, l: 10, r: 50 },
                 xaxis: {

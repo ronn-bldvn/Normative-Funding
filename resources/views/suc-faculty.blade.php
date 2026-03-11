@@ -109,9 +109,8 @@
                                 <i class="fa-solid fa-money-bill-wave text-green-600 text-2xl"></i>
                             </div>
                             <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-extrabold leading-tight">{{ $total_faculty }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] font-semibold text-white mt-1">Total University
-                                    Income</p>
+                                <p class="font-[inter] text-[32px] md:text-[44px] font-extrabold leading-tight">{{ $total_faculty }}</p>
+                                <p class="text-[20px] md:text-[16px] font-[inter] font-semibold text-white mt-1">Total Faculty of the University</p>
                             </div>
                         </div>
 
@@ -121,9 +120,9 @@
                                 <i class="fa-solid fa-graduation-cap text-white text-xl"></i>
                             </div>
                             <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-bold text-gray-900">
+                                <p class="font-[inter] text-[32px] md:text-[44px] font-bold text-gray-900">
                                     {{ $tertiary_total }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">Total Academic Fees</p>
+                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">Total Tertiary Faculty of the University</p>
                             </div>
                         </div>
 
@@ -133,10 +132,9 @@
                                 <i class="fa-solid fa-building text-white text-xl"></i>
                             </div>
                             <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-bold text-gray-900">
+                                <p class="font-[inter] text-[32px] md:text-[44px] font-bold text-gray-900">
                                     {{ $elem_secon_techbo_total}}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">Auxiliary &amp; Business
-                                    Income</p>
+                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">Total Elem/Second/TechVoc Faculty of the University</p>
                             </div>
                         </div>
                     </div>
@@ -222,55 +220,88 @@
                 // ── TENURE PIE ────────────────────────────────────────────────
                 const tenureValues = data.tenure?.values || [];
                 Plotly.newPlot('tenurePie', [{
-                    type:        'pie',
-                    labels:      data.tenure?.labels || [],
-                    values:      tenureValues,
-                    text:        buildPieTextArr(tenureValues),
-                    textinfo:    'text',
-                    hoverinfo:   'label+value+percent',
+                    type: 'pie',
+                    labels: data.tenure?.labels || [],
+                    values: tenureValues,
+                    text: buildPieTextArr(tenureValues),
+                    textinfo: 'text',
+                    textposition: 'outside',
+                    automargin: true,
+                    hoverinfo: 'label+value+percent',
                     marker: {
-                        colors:      COLORS,
+                        colors: COLORS,
                         line: { color: '#fff', width: 2 }
                     },
-                    textfont:    { size: 12, color: tenureValues.map((_, i) => contrastFor(COLORS[i % COLORS.length])) },
-                    insidetextorientation: 'auto',
-                }], PLOTLY_BASE_LAYOUT, PLOTLY_CONFIG);
+                    outsidetextfont: { size: 12, color: '#111827' },
+                    sort: false,
+                    direction: 'clockwise',
+                }], {
+                    ...PLOTLY_BASE_LAYOUT,
+                    margin: { t: 20, b: 20, l: 80, r: 160 },  // room for right-side legend
+                    legend: {
+                        orientation: 'v',       // vertical so labels don't wrap
+                        x: 1.02,
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        font: { size: 11 },
+                        tracegroupgap: 6,
+                    },
+                }, PLOTLY_CONFIG);
 
                 // ── RANK PIE ──────────────────────────────────────────────────
                 const rankValues = data.rank?.values || [];
                 Plotly.newPlot('rankPie', [{
-                    type:        'pie',
-                    labels:      data.rank?.labels || [],
-                    values:      rankValues,
-                    text:        buildPieTextArr(rankValues),
-                    textinfo:    'text',
-                    hoverinfo:   'label+value+percent',
+                    type: 'pie',
+                    labels: data.rank?.labels || [],
+                    values: rankValues,
+                    text: buildPieTextArr(rankValues),
+                    textinfo: 'text',
+                    textposition: 'outside',
+                    automargin: true,
+                    hoverinfo: 'label+value+percent',
                     marker: {
-                        colors:      COLORS,
+                        colors: COLORS,
                         line: { color: '#fff', width: 2 }
                     },
-                    textfont:    { size: 12, color: rankValues.map((_, i) => contrastFor(COLORS[i % COLORS.length])) },
-                    insidetextorientation: 'auto',
-                }], PLOTLY_BASE_LAYOUT, PLOTLY_CONFIG);
+                    outsidetextfont: { size: 11, color: '#111827' },
+                    sort: false,
+                    direction: 'clockwise',
+                }], {
+                    ...PLOTLY_BASE_LAYOUT,
+                    margin: { t: 20, b: 20, l: 80, r: 160 },  // more right room for legend
+                    legend: {
+                        orientation: 'v',        // vertical legend
+                        x: 1.02,                 // push to the right of the chart
+                        xanchor: 'left',
+                        y: 0.5,
+                        yanchor: 'middle',
+                        font: { size: 11 },
+                        tracegroupgap: 4,
+                    },
+                }, PLOTLY_CONFIG);
 
-                // ── GENDER DONUT ──────────────────────────────────────────────
+                // ── GENDER PIE ────────────────────────────────────────────────
                 const genderValues = data.gender?.values || [];
-                const genderTotal  = sum(genderValues);
                 Plotly.newPlot('genderPie', [{
-                    type:      'pie',
-                    labels:    data.gender?.labels || [],
-                    values:    genderValues,
-                    text:      buildPieTextArr(genderValues),
-                    textinfo:  'text',
+                    type: 'pie',
+                    labels: data.gender?.labels || [],
+                    values: genderValues,
+                    text: buildPieTextArr(genderValues),
+                    textinfo: 'text',
+                    textposition: 'outside',
+                    automargin: true,
                     hoverinfo: 'label+value+percent',
                     marker: {
                         colors: GENDER_COLORS,
                         line: { color: '#fff', width: 2 }
                     },
-                    textfont: { size: 12, color: '#fff' },
-                    insidetextorientation: 'auto',
+                    outsidetextfont: { size: 12, color: '#111827' },
+                    sort: false,
+                    direction: 'clockwise',
                 }], {
                     ...PLOTLY_BASE_LAYOUT,
+                    margin: { t: 70, b: 40, l: 40, r: 40 }
                 }, PLOTLY_CONFIG);
 
                 // ── GENDER BY COLLEGE STACKED BAR ─────────────────────────────
