@@ -189,7 +189,7 @@ class FundingDbService
         if (empty($items)) {
             return [];
         }
-
+        
         usort($items, fn($a, $b) => $b['value'] <=> $a['value']);
 
         $top  = array_slice($items, 0, 4);

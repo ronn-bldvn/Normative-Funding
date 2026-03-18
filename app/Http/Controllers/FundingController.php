@@ -22,7 +22,7 @@ class FundingController extends Controller
         }
 
         $type = $request->query('type', 'all');
-        $allowed = ['all', 'allotment', 'expenditure', 'suc_income'];
+        $allowed = ['all', 'allotment_expenditure', 'suc_income'];
         if (!in_array($type, $allowed, true)) {
             $type = 'all';
         }
