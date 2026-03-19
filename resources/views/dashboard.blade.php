@@ -1118,155 +1118,142 @@
             });
         });
 
-        function renderBudgetComparisonBar(chartId, rows) {
-            const el = $(chartId);
-            if (!el) return;
+function renderBudgetComparisonBar(chartId, rows) {
+    const el = $(chartId);
+    if (!el) return;
 
-            const cleanRows = (rows || []).filter(r => {
-                const allotmentTotal = n(r.gaa_allotment) + n(r.suc_allotment);
-                const expenditureTotal = n(r.gaa_expenditure) + n(r.suc_expenditure);
-                return allotmentTotal > 0 || expenditureTotal > 0;
-            });
+    const cleanRows = (rows || []).filter(r => {
+        return (n(r.gaa_allotment) + n(r.suc_allotment)) > 0 ||
+               (n(r.gaa_expenditure) + n(r.suc_expenditure)) > 0;
+    });
 
-            if (!cleanRows.length) {
-                Plotly.purge(chartId);
-                toggleChartCard(chartId, false);
-                return;
-            }
+    if (!cleanRows.length) {
+        Plotly.purge(chartId);
+        toggleChartCard(chartId, false);
+        return;
+    }
 
-            toggleChartCard(chartId, true);
+    toggleChartCard(chartId, true);
 
-            const functions = cleanRows.map(r => r.fn);
+    // Only include rows that actually have allotment/expenditure data
+    const allotRows = cleanRows.filter(r => n(r.gaa_allotment) + n(r.suc_allotment) > 0);
+    const expRows   = cleanRows.filter(r => n(r.gaa_expenditure) + n(r.suc_expenditure) > 0);
 
-            // nested x-axis categories
-            const xAllotment = [functions, functions.map(() => 'Allotment')];
-            const xExpenditure = [functions, functions.map(() => 'Expenditure')];
+    // Build multicategory x-arrays only for rows with data
+    const xA = [allotRows.map(r => wrapLabel(r.fn)), allotRows.map(() => '\u200B')];
+    const xE = [expRows.map(r  => wrapLabel(r.fn)),  expRows.map(() =>  '\u200C')];
 
-            const gaaAllotment = cleanRows.map(r => n(r.gaa_allotment));
-            const sucAllotment = cleanRows.map(r => n(r.suc_allotment));
-            const gaaExpenditure = cleanRows.map(r => n(r.gaa_expenditure));
-            const sucExpenditure = cleanRows.map(r => n(r.suc_expenditure));
+    const gaaA = allotRows.map(r => n(r.gaa_allotment)   > 0 ? n(r.gaa_allotment)   : null);
+    const sucA = allotRows.map(r => n(r.suc_allotment)   > 0 ? n(r.suc_allotment)   : null);
+    const gaaE = expRows.map(r  => n(r.gaa_expenditure)  > 0 ? n(r.gaa_expenditure) : null);
+    const sucE = expRows.map(r  => n(r.suc_expenditure)  > 0 ? n(r.suc_expenditure) : null);
 
-            const allotmentTotals = cleanRows.map(r => n(r.gaa_allotment) + n(r.suc_allotment));
-            const expenditureTotals = cleanRows.map(r => n(r.gaa_expenditure) + n(r.suc_expenditure));
+    const allotTotals = allotRows.map(r => n(r.gaa_allotment)   + n(r.suc_allotment));
+    const expTotals   = expRows.map(r   => n(r.gaa_expenditure) + n(r.suc_expenditure));
 
-            const maxY = Math.max(...allotmentTotals, ...expenditureTotals, 0);
+    const maxY = Math.max(...allotTotals, ...expTotals, 0);
 
-            const traces = [];
+    const traces = [];
 
-            if (gaaAllotment.some(v => v > 0)) {
-                traces.push({
-                    type: 'bar',
-                    name: 'GAA Allotment',
-                    x: xAllotment,
-                    y: gaaAllotment,
-                    marker: { color: '#007B3E' },
-                    hovertemplate: '<b>%{x}</b><br>GAA Allotment: %{y:,.2f}<extra></extra>'
-                });
-            }
+    if (gaaA.some(v => v !== null)) {
+        traces.push({
+            type: 'bar', name: 'GAA Allotment',
+            x: xA, y: gaaA,
+            marker: { color: '#007B3E' },
+            hovertemplate: '<b>%{x[0]}</b><br>GAA Allotment: %{y:,.2f}<extra></extra>'
+        });
+    }
+    if (sucA.some(v => v !== null)) {
+        traces.push({
+            type: 'bar', name: 'SUC Income Allotment',
+            x: xA, y: sucA,
+            marker: { color: '#FFD700' },
+            hovertemplate: '<b>%{x[0]}</b><br>SUC Income Allotment: %{y:,.2f}<extra></extra>'
+        });
+    }
+    if (gaaE.some(v => v !== null)) {
+        traces.push({
+            type: 'bar', name: 'GAA Expenditure',
+            x: xE, y: gaaE,
+            marker: { color: '#39EDFF' },
+            hovertemplate: '<b>%{x[0]}</b><br>GAA Expenditure: %{y:,.2f}<extra></extra>'
+        });
+    }
+    if (sucE.some(v => v !== null)) {
+        traces.push({
+            type: 'bar', name: 'SUC Income Expenditure',
+            x: xE, y: sucE,
+            marker: { color: '#EA7C69' },
+            hovertemplate: '<b>%{x[0]}</b><br>SUC Income Expenditure: %{y:,.2f}<extra></extra>'
+        });
+    }
 
-            if (sucAllotment.some(v => v > 0)) {
-                traces.push({
-                    type: 'bar',
-                    name: 'SUC Income Allotment',
-                    x: xAllotment,
-                    y: sucAllotment,
-                    marker: { color: '#FFD700' },
-                    hovertemplate: '<b>%{x}</b><br>SUC Income Allotment: %{y:,.2f}<extra></extra>'
-                });
-            }
+    // Total labels — only for rows with actual data
+    traces.push({
+        type: 'scatter', mode: 'text', x: xA,
+        y:    allotTotals.map(v => v > 0 ? v + maxY * 0.03 : null),
+        text: allotTotals.map(v => v > 0 ? `<b>${compactPeso(v)}</b>` : ''),
+        textposition: 'top center',
+        textfont: { family: 'Inter, sans-serif', size: 11, color: '#111827' },
+        hoverinfo: 'skip', showlegend: false
+    });
+    traces.push({
+        type: 'scatter', mode: 'text', x: xE,
+        y:    expTotals.map(v => v > 0 ? v + maxY * 0.03 : null),
+        text: expTotals.map(v => v > 0 ? `<b>${compactPeso(v)}</b>` : ''),
+        textposition: 'top center',
+        textfont: { family: 'Inter, sans-serif', size: 11, color: '#111827' },
+        hoverinfo: 'skip', showlegend: false
+    });
 
-            if (gaaExpenditure.some(v => v > 0)) {
-                traces.push({
-                    type: 'bar',
-                    name: 'GAA Expenditure',
-                    x: xExpenditure,
-                    y: gaaExpenditure,
-                    marker: { color: '#39EDFF' },
-                    hovertemplate: '<b>%{x}</b><br>GAA Expenditure: %{y:,.2f}<extra></extra>'
-                });
-            }
-
-            if (sucExpenditure.some(v => v > 0)) {
-                traces.push({
-                    type: 'bar',
-                    name: 'SUC Income Expenditure',
-                    x: xExpenditure,
-                    y: sucExpenditure,
-                    marker: { color: '#EA7C69' },
-                    hovertemplate: '<b>%{x}</b><br>SUC Income Expenditure: %{y:,.2f}<extra></extra>'
-                });
-            }
-
-            // total labels for allotment
-            traces.push({
-                type: 'scatter',
-                mode: 'text',
-                x: xAllotment,
-                y: allotmentTotals.map(v => v > 0 ? v + maxY * 0.03 : null),
-                text: allotmentTotals.map(v => v > 0 ? `<b>${compactPeso(v)}</b>` : ''),
-                textposition: 'top center',
-                textfont: {
-                    family: 'Inter, sans-serif',
-                    size: 11,
-                    color: '#111827'
-                },
-                hoverinfo: 'skip',
-                showlegend: false
-            });
-
-            // total labels for expenditure
-            traces.push({
-                type: 'scatter',
-                mode: 'text',
-                x: xExpenditure,
-                y: expenditureTotals.map(v => v > 0 ? v + maxY * 0.03 : null),
-                text: expenditureTotals.map(v => v > 0 ? `<b>${compactPeso(v)}</b>` : ''),
-                textposition: 'top center',
-                textfont: {
-                    family: 'Inter, sans-serif',
-                    size: 11,
-                    color: '#111827'
-                },
-                hoverinfo: 'skip',
-                showlegend: false
-            });
-
-            const layout = {
-                ...baseLayout(),
-                barmode: 'stack',
-                bargap: 0.25,
-                bargroupgap: 0.1,
-                margin: { t: 60, r: 30, b: 120, l: 80 },
-                legend: {
-                    orientation: 'h',
-                    x: 0.5,
-                    xanchor: 'center',
-                    y: 1.12,
-                    yanchor: 'bottom',
-                    font: { size: 11 }
-                },
-                xaxis: {
-                    type: 'multicategory',
-                    tickangle: -20,
-                    automargin: true
-                },
-                yaxis: {
-                    rangemode: 'tozero',
-                    automargin: true,
-                    tickprefix: '₱',
-                    tickformat: '.3s',
-                    range: [0, maxY * 1.18]
-                }
-            };
-
-            Plotly.newPlot(chartId, traces, layout, {
-                responsive: true,
-                displayModeBar: false
-            });
-
-            safeResize(chartId);
+    const layout = {
+        ...baseLayout(),
+        barmode: 'stack',
+        bargap: 0.25,
+        bargroupgap: 0.1,
+        margin: { t: 60, r: 30, b: 120, l: 80 },
+        legend: {
+            orientation: 'h', x: 0.5, xanchor: 'center',
+            y: 1.12, yanchor: 'bottom', font: { size: 11 }
+        },
+        xaxis: {
+            type: 'multicategory', tickangle: 0, automargin: true,
+            showgrid: false, zeroline: false, showline: false,
+            ticks: '', tickfont: { size: 11 },
+            showdividers: false,
+        },
+        yaxis: {
+            rangemode: 'tozero', automargin: true,
+            tickprefix: '₱', tickformat: '.2s',
+            range: [0, maxY * 1.18]
         }
+    };
+
+    Plotly.newPlot(chartId, traces, layout, { responsive: true, displayModeBar: false });
+    safeResize(chartId);
+}
+
+
+function wrapLabel(text, maxLength = 12) {
+    if (!text) return '';
+
+    const words = text.split(' ');
+    let lines = [];
+    let current = '';
+
+    words.forEach(word => {
+        if ((current + ' ' + word).length > maxLength) {
+            lines.push(current);
+            current = word;
+        } else {
+            current = current ? current + ' ' + word : word;
+        }
+    });
+
+    if (current) lines.push(current);
+
+    return lines.join('<br>');
+}
 
         function buildCombinedBudgetRows(allotmentRows, expenditureRows) {
             const map = {};
