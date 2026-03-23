@@ -1244,7 +1244,6 @@
             safeResize(chartId);
         }
 
-
         function wrapLabel(text, maxLength = 12) {
             if (!text) return '';
 
@@ -1342,9 +1341,10 @@
                             renderBudgetComparisonBar('budgetUtilizationFunctionChart', combinedRows);
                         }
 
-                    } catch (e) {
-                        console.error(e);
-                    }
-                })();
-            </script>
-@endsection
+            } catch (e) {
+                console.error(e);
+            }
+        })();
+
+    </script>
+@endsection     .
