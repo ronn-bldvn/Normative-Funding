@@ -187,189 +187,107 @@
                 class="{{ !in_array($filter_type, ['all', 'allotment_expenditure']) ? 'hidden' : '' }}">
                 {{-- Value Cards --}}
                 <div class="py-6 sm:py-8">
-                    {{-- <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-                        <div
-                            class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-wallet text-green-600 text-2xl"></i>
-                            </div>
-                            <div class="mt-12 flex flex-col items-end text-right text-white space-y-3">
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $allotment['combined_total'] }}
-                                    </p>
-                                    <span class="text-sm md:text-base font-medium opacity-90">
-                                        Total University Allotment
-                                    </span>
-                                </div>
 
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $expenditure['combined_total'] }}
-                                    </p>
-                                    <span class="text-sm md:text-base font-medium opacity-90">
-                                        Total University Expenditure
-                                    </span>
-                                </div>
+                    {{-- Budget Summary Cards --}}
 
-                                <div class="pt-1">
-                                    <p class="font-[Inter] text-[18px] md:text-[20px] font-semibold leading-tight">
-                                        Total University Budget Utilization
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
+                    @php
+                        $cards = [
+                            [
+                                'label'       => 'Combined',
+                                'icon'        => 'fa-wallet',
+                                'allotment'   => $allotment['combined_total'],
+                                'expenditure' => $expenditure['combined_total'],
+                                'utilization' => isset($allotment_raw['combined']) && $allotment_raw['combined'] > 0
+                                                    ? round(($expenditure_raw['combined'] / $allotment_raw['combined']) * 100, 1)
+                                                    : null,
+                            ],
+                            [
+                                'label'       => 'GAA',
+                                'icon'        => 'fa-landmark',
+                                'allotment'   => $allotment['gaa_total'],
+                                'expenditure' => $expenditure['gaa_total'],
+                                'utilization' => isset($allotment_raw['gaa']) && $allotment_raw['gaa'] > 0
+                                                    ? round(($expenditure_raw['gaa'] / $allotment_raw['gaa']) * 100, 1)
+                                                    : null,
+                            ],
+                            [
+                                'label'       => 'SUC Income',
+                                'icon'        => 'fa-arrow-trend-up',
+                                'allotment'   => $allotment['suc_total'],
+                                'expenditure' => $expenditure['suc_total'],
+                                'utilization' => isset($allotment_raw['suc']) && $allotment_raw['suc'] > 0
+                                                    ? round(($expenditure_raw['suc'] / $allotment_raw['suc']) * 100, 1)
+                                                    : null,
+                            ],
+                        ];
+                    @endphp
 
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-landmark text-white text-xl"></i>
-                            </div>
-                            <div class="mt-12 flex flex-col items-end text-right text-black space-y-3">
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $allotment['gaa_total']  }}
-                                    </p>
-                                    <span class="text-sm md:text-base font-medium opacity-90">
-                                        Total University GAA Allotment
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $expenditure['gaa_total']}}
-                                    </p>
-                                    <span class="text-sm md:text-base font-medium opacity-90">
-                                        Total University GAA Expenditure
-                                    </span>
-                                </div>
-
-                                <div class="pt-1">
-                                    <p class="font-[Inter] text-[18px] md:text-[20px] font-semibold leading-tight">
-                                        Total University Budget Utilization (GAA)
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-arrow-trend-up text-white text-xl"></i>
-                            </div>
-                            <div class="mt-12 flex flex-col items-end text-right text-black space-y-3">
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $allotment['suc_total']  }}
-                                    </p>
-                                    <span class="text-xs md:text-sm font-medium text-gray-500">
-                                        Total University SUC Income Allotment
-                                    </span>
-                                </div>
-
-                                <div>
-                                    <p class="font-[Inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                        {{ $expenditure['suc_total']}}
-                                    </p>
-                                    <span class="text-sm md:text-base font-medium opacity-90">
-                                        Total University SUC Income Expenditure
-                                    </span>
-                                </div>
-
-                                <div class="pt-1">
-                                    <p class="font-[Inter] text-[18px] md:text-[20px] font-semibold leading-tight">
-                                        Total University Budget Utilization (SUC Income)
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div> --}}
-
-                    {{-- othe ui for value cards --}}
-                    {{-- allotment --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mb-4">
-
-                        <div
-                            class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-wallet text-green-600 text-2xl"></i>
-                            </div>
-                            <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                    {{ $allotment['combined_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] font-semiboldtext-white">Total University
-                                    Allotment</p>
-                            </div>
-                        </div>
-
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-landmark text-white text-xl"></i>
-                            </div>
-                            <div class="mt-12 text-right">
-                                <p class="text-3xl md:text-2xl font-bold text-gray-900">{{ $allotment['gaa_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">GAA Allotment</p>
-                            </div>
-                        </div>
-
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-arrow-trend-up text-white text-xl"></i>
-                            </div>
-                            <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-bold text-gray-900">{{
-                                    $allotment['suc_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">SUC Income Allotment
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {{-- expenditure --}}
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                        @foreach ($cards as $card)
+                            @php
+                                $util = $card['utilization'];
+                                $barColor  = match(true) {
+                                    $util === null       => 'bg-gray-300',
+                                    $util >= 90          => 'bg-red-500',
+                                    $util >= 75          => 'bg-amber-400',
+                                    default              => 'bg-green-500',
+                                };
+                                $utilColor = match(true) {
+                                    $util === null       => 'text-gray-400',
+                                    $util >= 90          => 'text-red-600',
+                                    $util >= 75          => 'text-amber-500',
+                                    default              => 'text-green-600',
+                                };
+                            @endphp
 
-                        <div
-                            class="relative bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-white/90 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-arrow-trend-down text-green-600 text-2xl"></i>
-                            </div>
-                            <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-extrabold leading-tight">
-                                    {{ $expenditure['combined_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] font-semibold  text-white">Total
-                                    University Expenditure
-                                </p>
-                            </div>
-                        </div>
+                            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 border-l-4 border-l-green-500 flex flex-col gap-4">
 
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-receipt text-white text-xl"></i>
-                            </div>
-                            <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-bold text-gray-900">{{
-                                    $expenditure['gaa_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">GAA Expenditure</p>
-                            </div>
-                        </div>
+                                {{-- Card header --}}
+                                <div class="flex items-center justify-between">
+                                    <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+                                        <i class="fa-solid {{ $card['icon'] }} text-green-600 text-base"></i>
+                                    </div>
+                                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-green-50 text-green-700">
+                                        {{ $card['label'] }}
+                                    </span>
+                                </div>
 
-                        <div class="relative bg-white rounded-2xl p-6 shadow-md">
-                            <div
-                                class="absolute top-4 left-4 w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                                <i class="fa-solid fa-credit-card text-white text-xl"></i>
+                                {{-- Allotment vs Expenditure --}}
+                                <div class="flex justify-between items-end gap-2">
+                                    <div>
+                                        <p class="text-xs text-gray-400 mb-0.5">Allotment</p>
+                                        <p class="text-lg font-bold text-gray-900 leading-tight font-[Inter]">
+                                            {{ $card['allotment'] }}
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-400 mb-0.5">Expenditure</p>
+                                        <p class="text-lg font-bold text-red-600 leading-tight font-[Inter]">
+                                            {{ $card['expenditure'] }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {{-- Utilization bar --}}
+                                {{-- <div>
+                                    <div class="flex justify-between items-center mb-1.5">
+                                        <span class="text-xs text-gray-400">Utilization</span>
+                                        <span class="text-xs font-semibold {{ $utilColor }}">
+                                            {{ $util !== null ? $util . '%' : 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <div class="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                        @if ($util !== null)
+                                            <div
+                                                class="h-full rounded-full {{ $barColor }} transition-all duration-500"
+                                                style="width: {{ min($util, 100) }}%"
+                                            ></div>
+                                        @endif
+                                    </div>
+                                </div> --}}
+
                             </div>
-                            <div class="mt-12 text-right">
-                                <p class="font-[inter] text-[20px] md:text-[24px] font-bold text-gray-900">{{
-                                    $expenditure['suc_total'] }}</p>
-                                <p class="text-[20px] md:text-[16px] font-[inter] text-gray-500 mt-1">SUC Income Expenditure
-                                </p>
-                            </div>
-                        </div>
+                        @endforeach
                     </div>
 
                     {{-- charts --}}
